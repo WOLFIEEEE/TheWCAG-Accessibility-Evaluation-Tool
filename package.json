@@ -7,13 +7,16 @@
     "dev": "webpack --mode development --watch",
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "generate-icons": "node scripts/generate-icons.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run generate-icons && npm run build"
   },
   "keywords": [
     "accessibility",
