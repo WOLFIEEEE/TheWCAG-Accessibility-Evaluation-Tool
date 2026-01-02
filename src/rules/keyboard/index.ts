@@ -11,8 +11,8 @@ import { createRule } from '../index';
 // Focus Visibility Rules
 // ============================================
 
-const focusNotVisible: AccessibilityRule = createRule('focus_not_visible', 'Focus not visible', 'error', {
-  description: 'Focus indicator is not visible on interactive element',
+const focusNotVisible: AccessibilityRule = createRule('focus_not_visible', 'Focus not visible', 'alert', {
+  description: 'Focus indicator may not be visible on interactive element',
   impact: 'serious',
   wcagCriteria: ['2.4.7'],
   wcagLevel: 'AA',
@@ -37,44 +37,61 @@ const focusNotVisible: AccessibilityRule = createRule('focus_not_visible', 'Focu
     if (!isInteractive) return null;
     if (!isElementVisible(element)) return null;
 
-    // Check for outline: none or outline: 0 without alternative
-    const style = window.getComputedStyle(element);
-    const focusStyle = window.getComputedStyle(element, ':focus');
-
-    // Check if outline is explicitly removed
-    const outlineStyle = style.outlineStyle;
-    const outlineWidth = parseFloat(style.outlineWidth);
-
-    if ((outlineStyle === 'none' || outlineWidth === 0) && !element.classList.contains('focus-visible')) {
-      // Check if there's a custom focus indicator via box-shadow or border
-      const boxShadow = style.boxShadow;
-      const hasBoxShadowFocus = boxShadow && boxShadow !== 'none';
-
-      if (!hasBoxShadowFocus) {
-        return {
-          ruleId: 'focus_not_visible',
-          category: 'error',
-          element,
-          selector: getSelector(element),
-          xpath: getXPath(element),
-          message: 'Element may not have visible focus indicator',
-          impact: 'serious',
-          data: { tagName, role },
-        };
+    // We can't reliably check :focus styles without actually focusing the element
+    // Instead, we look for explicit focus removal patterns in stylesheets
+    
+    // Check if the element has inline style that removes outline on focus
+    const inlineStyle = element.getAttribute('style') || '';
+    const hasInlineOutlineNone = /outline\s*:\s*(none|0)/i.test(inlineStyle);
+    
+    if (!hasInlineOutlineNone) {
+      // Check if element or its class explicitly removes focus via stylesheet
+      // This is a heuristic - we look for common anti-patterns
+      const classList = Array.from(element.classList);
+      const hasNoFocusClass = classList.some(c => 
+        /no-?focus|focus-?none|no-?outline/i.test(c)
+      );
+      
+      if (!hasNoFocusClass) {
+        // Element likely has default browser focus styles or custom styles
+        // Don't flag it as an error - browser defaults work
+        return null;
       }
     }
 
-    return null;
+    // Only flag elements that explicitly remove focus styles
+    // Check if there's a visible alternative
+    const style = window.getComputedStyle(element);
+    const boxShadow = style.boxShadow;
+    const border = style.border;
+    const hasVisibleBorder = border && !border.includes('0px') && border !== 'none';
+    const hasBoxShadow = boxShadow && boxShadow !== 'none';
+    
+    if (hasVisibleBorder || hasBoxShadow) {
+      // Has alternative visual indicator
+      return null;
+    }
+
+    return {
+      ruleId: 'focus_not_visible',
+      category: 'alert', // Changed to alert - needs manual verification
+      element,
+      selector: getSelector(element),
+      xpath: getXPath(element),
+      message: 'Element may have focus styles removed - verify focus is visible',
+      impact: 'serious',
+      data: { tagName, role },
+    };
   },
   documentation: {
-    summary: 'Interactive element may not have a visible focus indicator.',
+    summary: 'Interactive element may have focus styles removed.',
     purpose: 'Keyboard users need to see which element has focus.',
     actions: [
-      'Ensure focus styles are visible (outline, border, or shadow).',
-      'Do not remove :focus styles without providing alternatives.',
-      'Use :focus-visible for mouse/keyboard differentiation.',
+      'Verify the element has visible focus indicator when tabbed to.',
+      'Check for :focus or :focus-visible CSS rules.',
+      'Browser default focus styles are acceptable.',
     ],
-    algorithm: 'Interactive element has outline:none without alternative focus styles.',
+    algorithm: 'Checks for explicit focus removal patterns (inline styles or class names). Most elements pass because browser defaults provide focus indication.',
     guidelines: [
       {
         id: '2.4.7',
