@@ -261,23 +261,44 @@ const headingPossible: AccessibilityRule = createRule('heading_possible', 'Possi
     const tagName = element.tagName.toLowerCase();
     if (['p', 'div', 'span'].indexOf(tagName) === -1) return null;
     
-    // Skip if inside a heading or link
-    if (element.closest('h1, h2, h3, h4, h5, h6, a')) return null;
+    // Skip if inside a heading, link, button, or interactive element
+    if (element.closest('h1, h2, h3, h4, h5, h6, a, button, [role="button"], nav, footer, header')) return null;
+    
+    // Skip common non-heading patterns
+    const classList = Array.from(element.classList);
+    const skipPatterns = [
+      /price/i, /cost/i, /amount/i, /total/i,  // Prices
+      /hero/i, /banner/i, /jumbotron/i,         // Hero sections (often styled)
+      /badge/i, /tag/i, /label/i, /chip/i,      // UI elements
+      /stat/i, /metric/i, /number/i,            // Stats/metrics
+      /logo/i, /brand/i,                        // Branding
+      /btn/i, /button/i, /cta/i,                // Buttons
+      /quote/i, /testimonial/i,                 // Quotes
+    ];
+    if (classList.some(c => skipPatterns.some(p => p.test(c)))) return null;
     
     const style = window.getComputedStyle(element);
     const text = getTextContent(element);
     
-    if (!text || text.length > 100) return null;
+    // Stricter text requirements
+    if (!text || text.length > 80 || text.length < 3) return null;
+    
+    // Skip if text looks like a price, number, or code
+    if (/^[\$\€\£\¥]?\d/.test(text.trim())) return null;
+    if (/^\d+(\.\d+)?%?$/.test(text.trim())) return null;
     
     const fontSize = parseFloat(style.fontSize);
     const fontWeight = style.fontWeight;
-    const isBoldish = fontWeight === 'bold' || parseInt(fontWeight, 10) >= 600;
-    const isLarger = fontSize >= 18;
+    const isBold = fontWeight === 'bold' || parseInt(fontWeight, 10) >= 700;
+    const isVeryLarge = fontSize >= 24; // More strict - 24px+ instead of 18px
     
-    // Check for visual heading characteristics
-    if ((isBoldish && isLarger) || fontSize >= 24) {
-      // Skip if element has children that look like paragraphs
-      if (element.querySelector('p, div')) return null;
+    // Much stricter: Must be VERY large AND bold, not just one or the other
+    if (isBold && isVeryLarge) {
+      // Skip if element has children that look like content
+      if (element.querySelector('p, div, a, span:not(.icon)')) return null;
+      
+      // Skip if it's a single word (less likely to be a real heading)
+      if (text.trim().split(/\s+/).length < 2) return null;
       
       return {
         ruleId: 'heading_possible',
@@ -285,7 +306,7 @@ const headingPossible: AccessibilityRule = createRule('heading_possible', 'Possi
         element,
         selector: getSelector(element),
         xpath: getXPath(element),
-        message: 'Text may be a visual heading',
+        message: 'Large bold text may be a heading - consider using h1-h6',
         impact: 'moderate',
         data: { text: text.substring(0, 50), fontSize, fontWeight },
       };
@@ -296,7 +317,7 @@ const headingPossible: AccessibilityRule = createRule('heading_possible', 'Possi
     summary: 'Text appears to be styled as a heading but is not a heading element.',
     purpose: 'Visual headings should be marked up as headings for accessibility.',
     actions: ['If this is a heading, use an h1-h6 element instead.'],
-    algorithm: 'Text is large/bold but not in a heading element.',
+    algorithm: 'Text is 24px+ AND bold, multi-word, not a price/stat/UI element.',
     guidelines: [{ id: '1.3.1', name: 'Info and Relationships', level: 'A', url: 'https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html' }],
   },
 });
@@ -795,33 +816,35 @@ const tabindex: AccessibilityRule = createRule('tabindex', 'Positive tabindex', 
   },
 });
 
-const accesskey: AccessibilityRule = createRule('accesskey', 'Accesskey', 'alert', {
-  description: 'Element has an accesskey',
-  impact: 'minor',
+const accesskey: AccessibilityRule = createRule('accesskey', 'Accesskey', 'feature', {
+  description: 'Element has an accesskey for keyboard shortcuts',
+  impact: 'none',
   wcagCriteria: ['2.1.1'],
   wcagLevel: 'A',
   tags: ['keyboard'],
   evaluate: (element: Element): RuleResult | null => {
+    // Changed to feature - accesskeys are a valid accessibility enhancement
+    // They provide keyboard shortcuts, which is positive for accessibility
     const accesskeyAttr = element.getAttribute('accesskey');
     
     if (accesskeyAttr) {
       return {
         ruleId: 'accesskey',
-        category: 'alert',
+        category: 'feature', // Positive - provides keyboard shortcut
         element,
         selector: getSelector(element),
         xpath: getXPath(element),
-        message: `Accesskey "${accesskeyAttr}" defined`,
-        impact: 'minor',
+        message: `Accesskey "${accesskeyAttr}" provides keyboard shortcut`,
+        impact: 'none',
         data: { accesskey: accesskeyAttr },
       };
     }
     return null;
   },
   documentation: {
-    summary: 'An accesskey attribute is present.',
-    purpose: 'Accesskeys can conflict with browser/AT shortcuts.',
-    actions: ['Consider removing accesskey or document it clearly.'],
+    summary: 'An accesskey provides a keyboard shortcut.',
+    purpose: 'Accesskeys enhance keyboard navigation for power users.',
+    actions: ['Document accesskeys for users.', 'Ensure they do not conflict with common shortcuts.'],
     algorithm: 'Element has an accesskey attribute.',
     guidelines: [{ id: '2.1.1', name: 'Keyboard', level: 'A', url: 'https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html' }],
   },
@@ -1036,29 +1059,31 @@ const titleRedundant: AccessibilityRule = createRule('title_redundant', 'Redunda
   },
 });
 
-const noscript: AccessibilityRule = createRule('noscript', 'Noscript element', 'alert', {
-  description: 'A noscript element is present',
-  impact: 'minor',
+const noscript: AccessibilityRule = createRule('noscript', 'Noscript element', 'feature', {
+  description: 'A noscript element provides fallback content',
+  impact: 'none',
   wcagCriteria: ['4.1.2'],
   wcagLevel: 'A',
   tags: ['scripts'],
   evaluate: (element: Element): RuleResult | null => {
+    // Changed to feature - noscript is a valid accessibility enhancement
+    // It provides fallback content for users without JavaScript
     if (element.tagName.toLowerCase() !== 'noscript') return null;
     
     return {
       ruleId: 'noscript',
-      category: 'alert',
+      category: 'feature', // Positive - provides fallback
       element,
       selector: getSelector(element),
       xpath: getXPath(element),
-      message: 'Noscript element is present',
-      impact: 'minor',
+      message: 'Noscript provides fallback content for non-JS users',
+      impact: 'none',
     };
   },
   documentation: {
     summary: 'A noscript element provides alternate content.',
-    purpose: 'Ensure noscript content is accessible and equivalent.',
-    actions: ['Verify the noscript content is accessible.'],
+    purpose: 'Noscript content helps users without JavaScript.',
+    actions: [],
     algorithm: 'A noscript element is present.',
     guidelines: [{ id: '4.1.2', name: 'Name, Role, Value', level: 'A', url: 'https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html' }],
   },

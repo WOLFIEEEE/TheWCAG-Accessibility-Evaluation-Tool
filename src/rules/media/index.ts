@@ -342,7 +342,7 @@ const prefersReducedMotion: AccessibilityRule = createRule(
   'May not respect reduced motion',
   'alert',
   {
-    description: 'Animation may not respect prefers-reduced-motion',
+    description: 'Significant animation may not respect prefers-reduced-motion',
     impact: 'moderate',
     wcagCriteria: ['2.3.3'],
     wcagLevel: 'AAA',
@@ -350,33 +350,50 @@ const prefersReducedMotion: AccessibilityRule = createRule(
     evaluate: (element: Element): RuleResult | null => {
       const style = window.getComputedStyle(element);
       const animationName = style.animationName;
+      const animationDuration = parseFloat(style.animationDuration);
+      const animationIterationCount = style.animationIterationCount;
 
+      // Only flag SIGNIFICANT animations that could cause vestibular issues:
+      // - Infinite/looping animations
+      // - Long animations (> 1 second)
+      // - Exclude subtle micro-interactions (< 0.3s one-time)
+      
       if (animationName && animationName !== 'none') {
-        // This is a heuristic - can't fully check without CSS analysis
-        // Alert on any animation as a reminder
-        return {
-          ruleId: 'prefers_reduced_motion',
-          category: 'alert',
-          element,
-          selector: getSelector(element),
-          xpath: getXPath(element),
-          message: 'Verify animation respects prefers-reduced-motion',
-          impact: 'moderate',
-          data: { animationName },
-        };
+        const isInfinite = animationIterationCount === 'infinite';
+        const isLong = animationDuration > 1;
+        const isSubtle = animationDuration <= 0.3 && !isInfinite;
+        
+        // Skip subtle micro-interactions
+        if (isSubtle) return null;
+        
+        // Only flag infinite or long animations
+        if (isInfinite || isLong) {
+          return {
+            ruleId: 'prefers_reduced_motion',
+            category: 'alert',
+            element,
+            selector: getSelector(element),
+            xpath: getXPath(element),
+            message: isInfinite 
+              ? 'Infinite animation should respect prefers-reduced-motion'
+              : `Long animation (${animationDuration}s) should respect prefers-reduced-motion`,
+            impact: 'moderate',
+            data: { animationName, animationDuration, animationIterationCount },
+          };
+        }
       }
 
       return null;
     },
     documentation: {
-      summary: 'Animation should respect user preference for reduced motion.',
+      summary: 'Significant animation should respect user preference for reduced motion.',
       purpose: 'Some users experience motion sickness from animations.',
       actions: [
         'Add @media (prefers-reduced-motion: reduce) to disable animations.',
         'Provide alternative static content when motion is reduced.',
         'Test with prefers-reduced-motion enabled.',
       ],
-      algorithm: 'Detects animated elements that may need reduced motion handling.',
+      algorithm: 'Detects infinite or long (>1s) animations. Ignores subtle micro-interactions.',
       guidelines: [
         {
           id: '2.3.3',

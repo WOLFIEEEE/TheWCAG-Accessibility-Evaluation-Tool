@@ -114,57 +114,43 @@ const keyboardTrap: AccessibilityRule = createRule('keyboard_trap', 'Potential k
   wcagLevel: 'A',
   tags: ['keyboard', 'focus'],
   evaluate: (element: Element): RuleResult | null => {
-    // Check for elements that commonly trap focus
     const tagName = element.tagName.toLowerCase();
 
-    // Check iframes
-    if (tagName === 'iframe') {
-      const iframe = element as HTMLIFrameElement;
-      // Iframes without proper focus management can trap users
-      if (!iframe.hasAttribute('tabindex') || parseInt(iframe.getAttribute('tabindex') || '0', 10) >= 0) {
-        return {
-          ruleId: 'keyboard_trap',
-          category: 'error',
-          element,
-          selector: getSelector(element),
-          xpath: getXPath(element),
-          message: 'Iframe may trap keyboard focus - verify focus can exit',
-          impact: 'critical',
-          data: { src: iframe.src },
-        };
-      }
-    }
+    // REMOVED: iframe check - most iframes (YouTube, maps, embeds) are NOT keyboard traps
+    // Browser handles iframe focus correctly. Only flag actual trapping behavior.
 
     // Check for modal dialogs without proper focus management
     if (element.getAttribute('role') === 'dialog' || tagName === 'dialog') {
-      const hasCloseButton = element.querySelector('[aria-label*="close" i], [aria-label*="dismiss" i], button');
-      const hasEscapeHandler = element.hasAttribute('onkeydown') || element.hasAttribute('onkeyup');
+      // Only check visible dialogs
+      const style = window.getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden') return null;
+      
+      // Check for close mechanisms
+      const hasCloseButton = element.querySelector(
+        'button[aria-label*="close" i], button[aria-label*="dismiss" i], ' +
+        '[role="button"][aria-label*="close" i], .close, .close-btn, [data-dismiss]'
+      );
+      const hasAriaModal = element.getAttribute('aria-modal') === 'true';
+      
+      // Native <dialog> elements have built-in Escape handling
+      if (tagName === 'dialog') return null;
 
-      if (!hasCloseButton && !hasEscapeHandler) {
+      // ARIA dialogs without close mechanism AND no aria-modal (which implies proper focus management)
+      if (!hasCloseButton && !hasAriaModal) {
         return {
           ruleId: 'keyboard_trap',
-          category: 'error',
+          category: 'alert', // Downgraded to alert - needs manual verification
           element,
           selector: getSelector(element),
           xpath: getXPath(element),
-          message: 'Dialog may trap focus - add close button or Escape handler',
-          impact: 'critical',
+          message: 'Dialog should have close button or Escape handler',
+          impact: 'serious',
         };
       }
     }
 
-    // Check for contenteditable elements
-    if (element.getAttribute('contenteditable') === 'true') {
-      return {
-        ruleId: 'keyboard_trap',
-        category: 'alert',
-        element,
-        selector: getSelector(element),
-        xpath: getXPath(element),
-        message: 'Contenteditable may trap focus - verify Tab exits the element',
-        impact: 'moderate',
-      };
-    }
+    // REMOVED: contenteditable check - browsers handle Tab correctly in contenteditable
+    // Tab key exits contenteditable by default in all modern browsers
 
     return null;
   },
@@ -172,11 +158,11 @@ const keyboardTrap: AccessibilityRule = createRule('keyboard_trap', 'Potential k
     summary: 'Element may trap keyboard focus, preventing users from leaving.',
     purpose: 'Users must be able to navigate away from all elements using keyboard.',
     actions: [
-      'Ensure focus can move out of iframes.',
       'Add close button and Escape handler to modals.',
       'Test Tab and Shift+Tab navigation.',
+      'Ensure aria-modal="true" is set for proper focus management.',
     ],
-    algorithm: 'Detects iframes, dialogs, and contenteditable elements that may trap focus.',
+    algorithm: 'Detects dialogs without proper close mechanisms. Iframes and contenteditable are handled by browsers.',
     guidelines: [
       {
         id: '2.1.2',
@@ -283,35 +269,46 @@ const clickableNotKeyboard: AccessibilityRule = createRule(
       const tagName = element.tagName.toLowerCase();
 
       // Skip naturally keyboard accessible elements
-      const naturallyAccessible = ['a', 'button', 'input', 'select', 'textarea', 'summary'];
+      const naturallyAccessible = ['a', 'button', 'input', 'select', 'textarea', 'summary', 'details'];
       if (naturallyAccessible.includes(tagName)) return null;
 
-      // Check if element has click handler
+      // Skip elements inside interactive elements (they inherit accessibility)
+      if (element.closest('a, button, [role="button"], [role="link"]')) return null;
+
+      // Check if element has ACTUAL click handler (not just inherited cursor style)
       const hasOnClick = element.hasAttribute('onclick');
       const hasRole = element.hasAttribute('role');
       const hasTabindex = element.hasAttribute('tabindex');
 
-      // Check for cursor:pointer (common indicator of clickable)
-      const style = window.getComputedStyle(element);
-      const hasCursorPointer = style.cursor === 'pointer';
+      // REMOVED: cursor:pointer check - this causes too many false positives
+      // cursor:pointer is often inherited or used for styling, not interaction
+      // Only check for actual onclick handlers
 
-      if ((hasOnClick || hasCursorPointer) && !hasRole && !hasTabindex) {
+      if (hasOnClick && !hasRole && !hasTabindex) {
+        // Additional check: skip small/icon elements that might be decorative
+        const rect = element.getBoundingClientRect();
+        if (rect.width < 10 || rect.height < 10) return null;
+        
+        // Skip elements with no text content (likely decorative)
+        const text = element.textContent?.trim();
+        if (!text && !element.querySelector('img, svg')) return null;
+
         return {
           ruleId: 'clickable_not_keyboard',
           category: 'error',
           element,
           selector: getSelector(element),
           xpath: getXPath(element),
-          message: 'Clickable element is not keyboard accessible',
+          message: 'Element with onclick is not keyboard accessible',
           impact: 'critical',
-          data: { tagName, hasOnClick, hasCursorPointer },
+          data: { tagName, hasOnClick },
         };
       }
 
-      // If has role but no tabindex
+      // If has interactive role but no tabindex
       if (hasRole && !hasTabindex) {
         const role = element.getAttribute('role');
-        const interactiveRoles = ['button', 'link', 'checkbox', 'radio', 'tab', 'menuitem', 'option'];
+        const interactiveRoles = ['button', 'link', 'checkbox', 'radio', 'tab', 'menuitem', 'option', 'switch'];
 
         if (interactiveRoles.includes(role || '')) {
           return {
@@ -330,14 +327,14 @@ const clickableNotKeyboard: AccessibilityRule = createRule(
       return null;
     },
     documentation: {
-      summary: 'Element appears clickable but cannot be accessed via keyboard.',
+      summary: 'Element has onclick handler but cannot be accessed via keyboard.',
       purpose: 'All interactive elements must be keyboard accessible.',
       actions: [
         'Use semantic HTML (button, a) instead of div/span.',
         'Add tabindex="0" and keyboard event handlers.',
         'Add appropriate ARIA role if using non-semantic element.',
       ],
-      algorithm: 'Non-interactive element has onclick or cursor:pointer without tabindex.',
+      algorithm: 'Non-interactive element has onclick without tabindex. Does NOT flag cursor:pointer alone.',
       guidelines: [
         {
           id: '2.1.1',

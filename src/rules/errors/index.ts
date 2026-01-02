@@ -399,8 +399,8 @@ const selectMissingLabel: AccessibilityRule = createRule('select_missing_label',
   },
 });
 
-const fieldsetMissing: AccessibilityRule = createRule('fieldset_missing', 'Missing fieldset', 'error', {
-  description: 'Radio buttons or checkboxes are not grouped in a fieldset',
+const fieldsetMissing: AccessibilityRule = createRule('fieldset_missing', 'Missing fieldset', 'alert', {
+  description: 'Radio buttons or checkboxes may need grouping',
   impact: 'moderate',
   wcagCriteria: ['1.3.1'],
   wcagLevel: 'A',
@@ -420,25 +420,47 @@ const fieldsetMissing: AccessibilityRule = createRule('fieldset_missing', 'Missi
     // Check if inside fieldset
     if (input.closest('fieldset')) return null;
     
+    // Check for ARIA alternatives (role="group" or role="radiogroup")
+    const ariaGroup = input.closest('[role="group"], [role="radiogroup"]');
+    if (ariaGroup) {
+      // ARIA group needs label
+      if (ariaGroup.hasAttribute('aria-labelledby') || ariaGroup.hasAttribute('aria-label')) {
+        return null; // Properly labeled ARIA group is acceptable
+      }
+    }
+    
+    // Check if inputs have aria-describedby pointing to a common description
+    const describedBy = input.getAttribute('aria-describedby');
+    if (describedBy) {
+      // All siblings share the same description = they're conceptually grouped
+      const allHaveSameDescription = Array.from(siblings).every(
+        s => s.getAttribute('aria-describedby') === describedBy
+      );
+      if (allHaveSameDescription) return null;
+    }
+    
     // Only report on the first one to avoid duplicates
     if (input !== siblings[0]) return null;
     
     return {
       ruleId: 'fieldset_missing',
-      category: 'error',
+      category: 'alert', // Downgraded - ARIA alternatives may exist
       element,
       selector: getSelector(element),
       xpath: getXPath(element),
-      message: 'Related form controls are not grouped with fieldset',
+      message: 'Consider grouping related form controls with fieldset/legend or role="group"',
       impact: 'moderate',
       data: { name: input.name, count: siblings.length },
     };
   },
   documentation: {
-    summary: 'Related radio buttons or checkboxes are not grouped in a fieldset.',
-    purpose: 'Fieldsets with legends help users understand related form controls.',
-    actions: ['Wrap related inputs in a fieldset with a descriptive legend.'],
-    algorithm: 'Multiple radio/checkbox inputs with same name are not in a fieldset.',
+    summary: 'Related radio buttons or checkboxes may benefit from grouping.',
+    purpose: 'Grouping helps users understand related form controls.',
+    actions: [
+      'Wrap related inputs in a fieldset with a descriptive legend.',
+      'Or use role="group" or role="radiogroup" with aria-labelledby.',
+    ],
+    algorithm: 'Multiple radio/checkbox inputs with same name not in fieldset or ARIA group.',
     guidelines: [{ id: '1.3.1', name: 'Info and Relationships', level: 'A', url: 'https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html' }],
   },
 });
