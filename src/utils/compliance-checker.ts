@@ -167,8 +167,29 @@ export function generateComplianceReport(
   }
 
   const total = applicableCriteria.length;
-  const testable = total - notApplicable - manual;
-  const percentage = testable > 0 ? Math.round((passed / testable) * 100) : 100;
+  const applicable = total - notApplicable;
+  
+  // FIXED: More honest percentage calculation
+  // - Cannot be 100% if there are ANY manual checks pending
+  // - Cannot be 100% if there are ANY failures
+  // - Percentage = (passed / all applicable criteria) * 100
+  // - This is conservative and honest
+  let percentage: number;
+  
+  if (applicable === 0) {
+    percentage = 0; // No applicable criteria
+  } else if (failed > 0) {
+    // If there are failures, calculate based on passed vs failed
+    percentage = Math.round((passed / applicable) * 100);
+  } else if (manual > 0) {
+    // If no failures but manual checks pending, cap at 99% maximum
+    // Never show 100% when manual verification is needed
+    const rawPercentage = Math.round((passed / applicable) * 100);
+    percentage = Math.min(rawPercentage, 99);
+  } else {
+    // Only 100% if ALL criteria passed with NO manual checks
+    percentage = Math.round((passed / applicable) * 100);
+  }
 
   return {
     wcagVersion: '2.2',
@@ -183,6 +204,8 @@ export function generateComplianceReport(
       notApplicable,
       total,
       percentage,
+      // NEW: Flag to indicate manual testing is required
+      requiresManualTesting: manual > 0,
     },
   };
 }

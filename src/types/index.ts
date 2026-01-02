@@ -549,6 +549,8 @@ export interface ComplianceReport {
     notApplicable: number;
     total: number;
     percentage: number;
+    /** True if any criteria require manual testing - compliance cannot be 100% verified automatically */
+    requiresManualTesting?: boolean;
   };
 }
 

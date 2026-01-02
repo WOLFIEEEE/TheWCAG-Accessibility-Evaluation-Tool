@@ -96,6 +96,37 @@
 }
 
 /* ============================================
+   Compliance Warning Banner
+   ============================================ */
+
+.compliance-warning {
+  background: linear-gradient(135deg, rgba(240, 173, 78, 0.15), rgba(240, 173, 78, 0.08));
+  border: 1px solid rgba(240, 173, 78, 0.4);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.compliance-warning strong {
+  color: var(--alert);
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-size: 12px;
+}
+
+.compliance-warning p {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Score display styling for uncertain compliance */
+.score-value[title*="manual"] {
+  color: var(--alert) !important;
+}
+
+/* ============================================
    Compliance Panel Items
    ============================================ */
 

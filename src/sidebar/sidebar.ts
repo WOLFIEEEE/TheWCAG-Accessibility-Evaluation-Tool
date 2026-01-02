@@ -864,9 +864,23 @@ function renderComplianceList() {
 
   const list = document.getElementById('compliance-list');
   const percentage = document.getElementById('compliance-percentage');
+  const { summary } = currentComplianceReport;
   
   if (percentage) {
-    percentage.textContent = `${currentComplianceReport.summary.percentage}%`;
+    // Never show 100% if manual testing is required
+    if (summary.requiresManualTesting) {
+      percentage.textContent = `≤${summary.percentage}%`;
+      percentage.title = `${summary.manual} criteria require manual testing. True compliance cannot be determined automatically.`;
+    } else if (summary.percentage === 100 && summary.manual > 0) {
+      // Extra safety: if somehow we have manual items but 100%, cap it
+      percentage.textContent = `≤99%`;
+      percentage.title = `${summary.manual} criteria require manual testing.`;
+    } else {
+      percentage.textContent = `${summary.percentage}%`;
+      percentage.title = summary.failed > 0 
+        ? `${summary.failed} criteria failed`
+        : 'Based on automated testing';
+    }
   }
 
   if (!list) return;
@@ -882,7 +896,19 @@ function renderComplianceList() {
     return;
   }
 
-  list.innerHTML = filteredResults.map(result => {
+  // Add warning banner if manual testing is required
+  let warningBanner = '';
+  if (summary.manual > 0) {
+    warningBanner = `
+      <div class="compliance-warning">
+        <strong>⚠️ Manual Testing Required</strong>
+        <p>${summary.manual} criteria cannot be verified automatically and require human review. 
+        Full WCAG compliance cannot be determined by automated testing alone.</p>
+      </div>
+    `;
+  }
+
+  list.innerHTML = warningBanner + filteredResults.map(result => {
     const statusIcon = {
       'passed': '✓',
       'failed': '✗',
