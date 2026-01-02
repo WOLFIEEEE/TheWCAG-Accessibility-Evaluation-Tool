@@ -48,8 +48,8 @@ const createSidebar = (): void => {
   sidebarElement.style.cssText = `
     width: 100%;
     height: 100%;
-    border: none;
-    background: #D3D9DE;
+      border: none;
+      background: #F9F7F4;
   `;
 
   container.appendChild(sidebarElement);
@@ -68,7 +68,7 @@ const createSidebar = (): void => {
     padding: 0;
     border: none;
     border-radius: 0 6px 6px 0;
-    background-color: #1451A0;
+      background-color: #A85A3B;
     color: white;
     cursor: pointer;
     z-index: 2147483647;
@@ -116,13 +116,13 @@ const getCategoryClass = (category: string): string => {
 
 const getCategoryStyles = (category: string): string => {
   const styles: Record<string, string> = {
-    error: 'background-color: #e74c3c;',
-    alert: 'background-color: #f39c12;',
-    feature: 'background-color: #27ae60;',
-    structure: 'background-color: #3498db;',
-    aria: 'background-color: #9b59b6;',
+    error: 'background-color: #D64545;',
+    alert: 'background-color: #E6994D;',
+    feature: 'background-color: #4A9D5B;',
+    structure: 'background-color: #4A7DB5;',
+    aria: 'background-color: #8B5CB5;',
   };
-  return styles[category] || 'background-color: #95a5a6;';
+  return styles[category] || 'background-color: #A85A3B;';
 };
 
 const getCategoryIcon = (category: string): string => {
