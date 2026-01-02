@@ -11,6 +11,12 @@ import {
   HeadingInfo,
   LandmarkInfo,
   NavigationItem,
+  ComplianceReport,
+  WcagLevel,
+  ExtensionSettings,
+  IgnorePattern,
+  ScreenReaderOutput,
+  QuickFix,
 } from '../types';
 import {
   parseColor,
@@ -24,6 +30,21 @@ import {
   rgbToHsl,
   hslToRgb,
 } from '../utils/color-utils';
+
+// ============================================
+// Context Validation
+// ============================================
+let isContextInvalidated = false;
+
+const isContextValid = (): boolean => {
+  if (isContextInvalidated) return false;
+  try {
+    return !!(chrome?.runtime?.id);
+  } catch {
+    isContextInvalidated = true;
+    return false;
+  }
+};
 
 // ============================================
 // State
@@ -51,48 +72,74 @@ let desaturated = false;
 // Initialize
 // ============================================
 function init() {
+  console.log('TheWCAG Sidebar: Initializing...');
   connectToServiceWorker();
   setupEventListeners();
   sendMessage('sidebarLoaded', {});
+  console.log('TheWCAG Sidebar: Initialized and sent sidebarLoaded');
 }
 
 // ============================================
 // Messaging
 // ============================================
 function connectToServiceWorker() {
+  if (!isContextValid()) return;
   try {
     port = chrome.runtime.connect({ name: 'sidebarToServiceWorker' });
 
     port.onMessage.addListener(handleMessage);
     port.onDisconnect.addListener(() => {
+      void chrome.runtime.lastError;
       port = null;
     });
   } catch (e) {
     console.error('Failed to connect to service worker:', e);
+    port = null;
   }
 }
 
 function sendMessage(action: string, data: unknown) {
+  if (!isContextValid()) return;
   if (port) {
-    port.postMessage({ action, data });
+    try {
+      port.postMessage({ action, data });
+    } catch {
+      // Port disconnected
+      port = null;
+    }
   }
 }
 
 function handleMessage(message: { name: string; action: string; data: unknown; tabId?: number }) {
-  if (message.name !== 'serviceworkerToSidebar') return;
+  console.log('TheWCAG Sidebar: Received message', message.name, message.action);
+  
+  if (!isContextValid()) {
+    console.log('TheWCAG Sidebar: Context invalid, ignoring');
+    return;
+  }
+  if (message.name !== 'serviceWorkerToSidebar') {
+    console.log('TheWCAG Sidebar: Wrong message name, ignoring');
+    return;
+  }
 
   if (tabId === undefined && message.tabId !== undefined) {
     tabId = message.tabId;
   }
 
-  if (message.tabId !== undefined && message.tabId !== tabId) return;
+  if (message.tabId !== undefined && message.tabId !== tabId) {
+    console.log('TheWCAG Sidebar: Tab ID mismatch, ignoring');
+    return;
+  }
 
   switch (message.action) {
     case 'setExtensionUrl':
-      // Extension URL received
+      console.log('TheWCAG Sidebar: Extension URL received');
       break;
 
     case 'evaluationResults':
+      console.log('TheWCAG Sidebar: Evaluation results received, data:', message.data);
+      console.log('TheWCAG Sidebar: Data type:', typeof message.data);
+      console.log('TheWCAG Sidebar: Has summary?', !!(message.data as any)?.summary);
       handleResults(message.data as EvaluationResults);
       break;
 
@@ -101,11 +148,19 @@ function handleMessage(message: { name: string; action: string; data: unknown; t
       break;
 
     case 'navigationData':
-      handleNavigationData(message.data as NavigationItem[]);
+      console.log('TheWCAG Sidebar: Navigation data received:', message.data);
+      handleNavigationData(message.data);
       break;
 
     case 'contrastData':
       handleContrastData(message.data as { foreground: string; background: string });
+      break;
+
+    case 'complianceData':
+    case 'settingsData':
+    case 'screenReaderData':
+    case 'quickFixData':
+      handleNewFeatureMessages(message);
       break;
   }
 }
@@ -247,12 +302,22 @@ function createGroupItem(group: RuleResultGroup, className: string): HTMLLIEleme
 
   group.items.forEach((item, index) => {
     const itemLi = document.createElement('li');
+    itemLi.className = 'item-with-inspect';
     itemLi.innerHTML = `
       <button class="icon-btn ${className}" 
               data-selector="${escapeHtml(item.selector)}"
               data-item-id="${group.ruleId}-${index}"
               title="${escapeHtml(item.message)}">
         ${index + 1}
+      </button>
+      <button class="inspect-btn" 
+              data-selector="${escapeHtml(item.selector)}"
+              title="Inspect in DevTools">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <path d="M14 2v6h6"/>
+          <path d="M16 13H8M16 17H8M10 9H8"/>
+        </svg>
       </button>
     `;
     itemList.appendChild(itemLi);
@@ -305,15 +370,32 @@ function handleOutlineData(data: { headings: HeadingInfo[]; landmarks: LandmarkI
 // ============================================
 // Navigation Order
 // ============================================
-function handleNavigationData(items: NavigationItem[]) {
+function handleNavigationData(data: NavigationItem[] | { items?: NavigationItem[] } | unknown) {
   const navList = document.getElementById('nav-list');
   if (!navList) return;
+
+  // Handle different data formats
+  let items: NavigationItem[] = [];
+  if (Array.isArray(data)) {
+    items = data;
+  } else if (data && typeof data === 'object' && 'items' in data && Array.isArray((data as { items: NavigationItem[] }).items)) {
+    items = (data as { items: NavigationItem[] }).items;
+  } else {
+    console.warn('TheWCAG Sidebar: Invalid navigation data format:', data);
+    navList.innerHTML = '<li class="nav-item">Unable to load navigation order</li>';
+    return;
+  }
+
+  if (items.length === 0) {
+    navList.innerHTML = '<li class="nav-item">No focusable elements found</li>';
+    return;
+  }
 
   navList.innerHTML = items
     .map(
       item => `
-    <li class="nav-item" data-selector="${escapeHtml(item.selector || item.tagName)}">
-      <span class="nav-index">${item.index}</span>
+    <li class="nav-item" data-selector="${escapeHtml(item.selector || item.tagName || '')}">
+      <span class="nav-index">${item.index || 0}</span>
       <span class="nav-role">${item.role || item.tagName || 'unknown'}</span>
       <span class="nav-name">${escapeHtml(item.accessibleName || item.text || '') || '<no name>'}</span>
     </li>
@@ -485,6 +567,12 @@ function switchTab(tabName: SidebarTab) {
   // Load data for specific tabs
   if (tabName === 'order') {
     sendMessage('getNavigationOrder', {});
+  } else if (tabName === 'compliance') {
+    updateCompliancePanel();
+  } else if (tabName === 'settings') {
+    loadSettings();
+  } else if (tabName === 'structure') {
+    updateScreenReaderPreview();
   }
 }
 
@@ -517,6 +605,17 @@ function setupEventListeners() {
     if (target.classList.contains('reference-btn')) {
       const ruleId = target.dataset.ruleId;
       if (ruleId) showReference(ruleId);
+      return;
+    }
+
+    // Inspect button click - show element in DevTools
+    const inspectBtn = target.closest('.inspect-btn') as HTMLElement;
+    if (inspectBtn) {
+      const selector = inspectBtn.dataset.selector;
+      if (selector) {
+        sendMessage('inspectElement', { selector });
+        showInspectNotification();
+      }
       return;
     }
 
@@ -698,7 +797,543 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
+function showInspectNotification() {
+  // Remove existing notification if any
+  const existing = document.getElementById('inspect-notification');
+  if (existing) existing.remove();
+
+  const notification = document.createElement('div');
+  notification.id = 'inspect-notification';
+  notification.innerHTML = `
+    <div class="inspect-notification-content">
+      <strong>Element ready for inspection!</strong>
+      <p>Open DevTools (F12 or Cmd+Opt+I) and type in Console:</p>
+      <code>inspect($wcag)</code>
+      <p class="small">Or check the Console for the logged element.</p>
+      <button class="close-notification">✕</button>
+    </div>
+  `;
+  document.body.appendChild(notification);
+
+  // Auto-hide after 8 seconds
+  setTimeout(() => notification.remove(), 8000);
+
+  // Close button
+  notification.querySelector('.close-notification')?.addEventListener('click', () => {
+    notification.remove();
+  });
+}
+
+// ============================================
+// Compliance Panel
+// ============================================
+let currentComplianceReport: ComplianceReport | null = null;
+let currentComplianceFilter = 'all';
+
+function updateCompliancePanel() {
+  if (!state.results) {
+    const list = document.getElementById('compliance-list');
+    if (list) list.innerHTML = '<p>Evaluate a page first to see compliance data.</p>';
+    return;
+  }
+
+  // Request compliance report from background
+  sendMessage('getComplianceReport', { 
+    level: (document.getElementById('wcag-level') as HTMLSelectElement)?.value || 'AA' 
+  });
+}
+
+function handleComplianceData(report: ComplianceReport) {
+  currentComplianceReport = report;
+  renderComplianceList();
+}
+
+function renderComplianceList() {
+  if (!currentComplianceReport) return;
+
+  const list = document.getElementById('compliance-list');
+  const percentage = document.getElementById('compliance-percentage');
+  
+  if (percentage) {
+    percentage.textContent = `${currentComplianceReport.summary.percentage}%`;
+  }
+
+  if (!list) return;
+
+  const filteredResults = currentComplianceReport.results.filter(result => {
+    if (currentComplianceFilter === 'all') return true;
+    if (currentComplianceFilter === 'new22') return result.criterion.isNew22;
+    return result.status === currentComplianceFilter;
+  });
+
+  if (filteredResults.length === 0) {
+    list.innerHTML = '<p class="empty-message">No matching criteria found.</p>';
+    return;
+  }
+
+  list.innerHTML = filteredResults.map(result => {
+    const statusIcon = {
+      'passed': '✓',
+      'failed': '✗',
+      'manual': '?',
+      'not-applicable': '—',
+      'not-tested': '○'
+    }[result.status] || '?';
+
+    const new22Badge = result.criterion.isNew22 
+      ? '<span class="new-22-badge">NEW 2.2</span>' 
+      : '';
+
+    return `
+      <div class="compliance-item ${result.status}">
+        <div class="compliance-status">${statusIcon}</div>
+        <div class="compliance-details">
+          <span class="compliance-id">${result.criterion.id}</span>
+          <span class="compliance-level">${result.criterion.level}</span>
+          ${new22Badge}
+          <div class="compliance-name">${escapeHtml(result.criterion.name)}</div>
+          ${result.issueCount > 0 ? `<div class="compliance-issue-count">${result.issueCount} issues found</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setupComplianceListeners() {
+  // Level selector
+  document.getElementById('wcag-level')?.addEventListener('change', () => {
+    updateCompliancePanel();
+  });
+
+  // Filter buttons
+  document.querySelectorAll('.compliance-filters .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.compliance-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentComplianceFilter = (btn as HTMLElement).dataset.filter || 'all';
+      renderComplianceList();
+    });
+  });
+
+  // Export button
+  document.getElementById('export-compliance')?.addEventListener('click', () => {
+    if (!currentComplianceReport) {
+      showNotification('No compliance data to export', 'error');
+      return;
+    }
+    exportComplianceReport();
+  });
+}
+
+function exportComplianceReport() {
+  if (!currentComplianceReport) return;
+
+  const text = generateComplianceText(currentComplianceReport);
+  downloadTextFile('wcag-compliance-report.txt', text);
+  showNotification('Compliance report exported!', 'success');
+}
+
+function generateComplianceText(report: ComplianceReport): string {
+  const lines = [
+    '═'.repeat(60),
+    'WCAG 2.2 COMPLIANCE REPORT',
+    '═'.repeat(60),
+    '',
+    `URL: ${report.url}`,
+    `Target Level: ${report.targetLevel}`,
+    `Generated: ${new Date(report.timestamp).toLocaleString()}`,
+    '',
+    '─'.repeat(60),
+    'SUMMARY',
+    '─'.repeat(60),
+    `Compliance: ${report.summary.percentage}%`,
+    `Passed: ${report.summary.passed}`,
+    `Failed: ${report.summary.failed}`,
+    `Manual: ${report.summary.manual}`,
+    '',
+  ];
+
+  report.results.forEach(result => {
+    const status = { 
+      passed: '✓', failed: '✗', manual: '?', 
+      'not-applicable': '—', 'not-tested': '○' 
+    }[result.status];
+    lines.push(`[${status}] ${result.criterion.id} ${result.criterion.name}`);
+  });
+
+  return lines.join('\n');
+}
+
+// ============================================
+// Settings Panel
+// ============================================
+let currentSettings: ExtensionSettings | null = null;
+
+function loadSettings() {
+  sendMessage('getSettings', {});
+}
+
+function handleSettingsData(settings: ExtensionSettings) {
+  currentSettings = settings;
+  renderIgnoreList();
+  renderCustomRules();
+  updateSettingsUI();
+}
+
+function updateSettingsUI() {
+  if (!currentSettings) return;
+
+  const globalIgnore = document.getElementById('global-ignore-enabled') as HTMLInputElement;
+  const showNew22 = document.getElementById('show-new22-badge') as HTMLInputElement;
+  const defaultLevel = document.getElementById('default-wcag-level') as HTMLSelectElement;
+
+  if (globalIgnore) globalIgnore.checked = currentSettings.globalIgnoreEnabled;
+  if (showNew22) showNew22.checked = currentSettings.showNewIn22Badge;
+  if (defaultLevel) defaultLevel.value = currentSettings.defaultWcagLevel;
+}
+
+function renderIgnoreList() {
+  const list = document.getElementById('ignore-list');
+  if (!list || !currentSettings) return;
+
+  if (currentSettings.ignorePatterns.length === 0) {
+    list.innerHTML = '<p class="empty-message">No ignore patterns defined.</p>';
+    return;
+  }
+
+  list.innerHTML = currentSettings.ignorePatterns.map(pattern => `
+    <div class="ignore-item ${pattern.enabled ? '' : 'disabled'}" data-id="${pattern.id}">
+      <span class="ignore-item-pattern">${escapeHtml(pattern.pattern)}</span>
+      <span class="ignore-item-type">${pattern.type}</span>
+      <div class="ignore-item-actions">
+        <button class="toggle-pattern-btn" title="${pattern.enabled ? 'Disable' : 'Enable'}">
+          ${pattern.enabled ? '✓' : '○'}
+        </button>
+        <button class="delete-pattern-btn" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCustomRules() {
+  const list = document.getElementById('custom-rules-list');
+  if (!list || !currentSettings) return;
+
+  if (currentSettings.customRules.length === 0) {
+    list.innerHTML = '<p class="empty-message">No custom rules defined.</p>';
+    return;
+  }
+
+  list.innerHTML = currentSettings.customRules.map(rule => `
+    <div class="custom-rule-item" data-id="${rule.id}">
+      <h4>${escapeHtml(rule.name)}</h4>
+      <p>${escapeHtml(rule.message)}</p>
+      <div class="custom-rule-selector">${escapeHtml(rule.selector)}</div>
+    </div>
+  `).join('');
+}
+
+function setupSettingsListeners() {
+  // Global ignore toggle
+  document.getElementById('global-ignore-enabled')?.addEventListener('change', (e) => {
+    if (currentSettings) {
+      currentSettings.globalIgnoreEnabled = (e.target as HTMLInputElement).checked;
+      saveSettings();
+    }
+  });
+
+  // Add ignore pattern
+  document.getElementById('add-ignore-pattern')?.addEventListener('click', () => {
+    const type = (document.getElementById('ignore-pattern-type') as HTMLSelectElement)?.value;
+    const value = (document.getElementById('ignore-pattern-value') as HTMLInputElement)?.value;
+    const reason = (document.getElementById('ignore-pattern-reason') as HTMLInputElement)?.value;
+
+    if (!value.trim()) {
+      showNotification('Please enter a pattern', 'error');
+      return;
+    }
+
+    const pattern: IgnorePattern = {
+      id: Date.now().toString(),
+      type: type as IgnorePattern['type'],
+      pattern: value.trim(),
+      reason: reason || undefined,
+      createdAt: Date.now(),
+      enabled: true,
+    };
+
+    if (currentSettings) {
+      currentSettings.ignorePatterns.push(pattern);
+      saveSettings();
+      renderIgnoreList();
+      
+      // Clear inputs
+      (document.getElementById('ignore-pattern-value') as HTMLInputElement).value = '';
+      (document.getElementById('ignore-pattern-reason') as HTMLInputElement).value = '';
+    }
+  });
+
+  // Ignore list actions
+  document.getElementById('ignore-list')?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const item = target.closest('.ignore-item');
+    const id = item?.getAttribute('data-id');
+
+    if (!id || !currentSettings) return;
+
+    if (target.classList.contains('delete-pattern-btn')) {
+      currentSettings.ignorePatterns = currentSettings.ignorePatterns.filter(p => p.id !== id);
+      saveSettings();
+      renderIgnoreList();
+    } else if (target.classList.contains('toggle-pattern-btn')) {
+      const pattern = currentSettings.ignorePatterns.find(p => p.id === id);
+      if (pattern) {
+        pattern.enabled = !pattern.enabled;
+        saveSettings();
+        renderIgnoreList();
+      }
+    }
+  });
+
+  // Export/Import
+  document.getElementById('export-settings')?.addEventListener('click', () => {
+    if (!currentSettings) return;
+    const json = JSON.stringify(currentSettings, null, 2);
+    downloadTextFile('thewcag-settings.json', json);
+    showNotification('Settings exported!', 'success');
+  });
+
+  document.getElementById('import-settings')?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const settings = JSON.parse(reader.result as string);
+            sendMessage('saveSettings', settings);
+            showNotification('Settings imported!', 'success');
+            loadSettings();
+          } catch {
+            showNotification('Invalid settings file', 'error');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  });
+}
+
+function saveSettings() {
+  if (currentSettings) {
+    sendMessage('saveSettings', currentSettings);
+  }
+}
+
+// ============================================
+// Screen Reader Preview
+// ============================================
+let screenReaderOutputs: ScreenReaderOutput[] = [];
+
+function updateScreenReaderPreview() {
+  sendMessage('getScreenReaderPreview', {});
+}
+
+function handleScreenReaderData(outputs: ScreenReaderOutput[]) {
+  screenReaderOutputs = outputs;
+  renderScreenReaderOutput();
+}
+
+function renderScreenReaderOutput() {
+  const output = document.getElementById('sr-output');
+  const mode = (document.getElementById('sr-mode') as HTMLSelectElement)?.value || 'all';
+
+  if (!output) return;
+
+  const filtered = filterScreenReaderOutputs(screenReaderOutputs, mode);
+
+  if (filtered.length === 0) {
+    output.innerHTML = '<p class="empty-message">No elements found for this mode.</p>';
+    return;
+  }
+
+  output.innerHTML = filtered.map(item => {
+    const depthClass = `sr-item-depth-${Math.min(item.depth, 5)}`;
+    const issueClass = item.hasIssue ? 'has-issue' : '';
+
+    return `
+      <div class="sr-item ${depthClass} ${issueClass}" data-selector="${escapeHtml(item.selector)}">
+        <span class="sr-announcement">${escapeHtml(item.announcement)}</span>
+        ${item.hasIssue ? `<span class="sr-issue">⚠ ${escapeHtml(item.issueMessage || '')}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function filterScreenReaderOutputs(outputs: ScreenReaderOutput[], mode: string): ScreenReaderOutput[] {
+  if (mode === 'all') return outputs;
+  if (mode === 'issues') return outputs.filter(o => o.hasIssue);
+  return outputs.filter(o => {
+    const typeMap: Record<string, string[]> = {
+      headings: ['heading'],
+      landmarks: ['landmark', 'navigation', 'region'],
+      links: ['link'],
+      buttons: ['button'],
+      forms: ['form'],
+      tables: ['table'],
+      images: ['image'],
+    };
+    return typeMap[mode]?.includes(o.type);
+  });
+}
+
+function setupScreenReaderListeners() {
+  // Mode selector
+  document.getElementById('sr-mode')?.addEventListener('change', () => {
+    renderScreenReaderOutput();
+  });
+
+  // Click to highlight
+  document.getElementById('sr-output')?.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest('.sr-item');
+    if (item) {
+      const selector = item.getAttribute('data-selector');
+      if (selector) {
+        sendMessage('highlightElement', { selector });
+      }
+    }
+  });
+
+  // Export
+  document.getElementById('sr-export')?.addEventListener('click', () => {
+    const text = screenReaderOutputs.map(o => {
+      const indent = '  '.repeat(o.depth);
+      return `${indent}${o.announcement}${o.hasIssue ? ' ⚠' : ''}`;
+    }).join('\n');
+
+    downloadTextFile('screen-reader-preview.txt', text);
+    showNotification('Screen reader preview exported!', 'success');
+  });
+}
+
+// ============================================
+// Quick Fix
+// ============================================
+let currentQuickFix: QuickFix | null = null;
+
+function showQuickFix(ruleId: string, selector: string) {
+  sendMessage('getQuickFix', { ruleId, selector });
+}
+
+function handleQuickFixData(data: { fix: QuickFix; currentCode: string; suggestedCode: string }) {
+  currentQuickFix = data.fix;
+  
+  const section = document.getElementById('quick-fix-section');
+  const current = document.getElementById('fix-current');
+  const suggested = document.getElementById('fix-suggested');
+  const examplesList = document.getElementById('fix-examples-list');
+  const learnMore = document.getElementById('fix-learn-more') as HTMLAnchorElement;
+
+  if (!section || !current || !suggested) return;
+
+  section.classList.remove('hidden');
+  current.textContent = data.currentCode;
+  suggested.textContent = data.suggestedCode;
+
+  if (examplesList && data.fix.examples) {
+    examplesList.innerHTML = data.fix.examples.map(ex => `
+      <div class="fix-example">
+        <div class="fix-example-before">Before: <span>${escapeHtml(ex.before)}</span></div>
+        <div class="fix-example-after">After: <span>${escapeHtml(ex.after)}</span></div>
+        <div class="fix-example-explanation">${escapeHtml(ex.explanation)}</div>
+      </div>
+    `).join('');
+  }
+
+  if (learnMore) {
+    learnMore.href = data.fix.learnMoreUrl;
+  }
+}
+
+function setupQuickFixListeners() {
+  // Copy fix button
+  document.getElementById('copy-fix-btn')?.addEventListener('click', () => {
+    const suggested = document.getElementById('fix-suggested');
+    if (suggested) {
+      navigator.clipboard.writeText(suggested.textContent || '');
+      const btn = document.getElementById('copy-fix-btn');
+      if (btn) {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      }
+    }
+  });
+}
+
+// ============================================
+// Notification System
+// ============================================
+function showNotification(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  const notification = document.getElementById('notification');
+  if (!notification) return;
+
+  notification.textContent = message;
+  notification.className = `notification ${type}`;
+  notification.classList.remove('hidden');
+
+  setTimeout(() => {
+    notification.classList.add('hidden');
+  }, 3000);
+}
+
+// ============================================
+// Utility Functions
+// ============================================
+function downloadTextFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// Enhanced Message Handler
+// ============================================
+function handleNewFeatureMessages(message: { action: string; data: unknown }) {
+  switch (message.action) {
+    case 'complianceData':
+      handleComplianceData(message.data as ComplianceReport);
+      break;
+    case 'settingsData':
+      handleSettingsData(message.data as ExtensionSettings);
+      break;
+    case 'screenReaderData':
+      handleScreenReaderData(message.data as ScreenReaderOutput[]);
+      break;
+    case 'quickFixData':
+      handleQuickFixData(message.data as { fix: QuickFix; currentCode: string; suggestedCode: string });
+      break;
+  }
+}
+
 // ============================================
 // Start
 // ============================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  setupComplianceListeners();
+  setupSettingsListeners();
+  setupScreenReaderListeners();
+  setupQuickFixListeners();
+});

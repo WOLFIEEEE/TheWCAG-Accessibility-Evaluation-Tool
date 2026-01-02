@@ -12,6 +12,7 @@ module.exports = (env, argv) => {
       'content/content-script': './src/content/content-script.ts',
       'inject/analyzer': './src/inject/analyzer.ts',
       'sidebar/sidebar': './src/sidebar/sidebar.ts',
+      'workers/evaluation-worker': './src/workers/evaluation-worker.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -55,6 +56,7 @@ module.exports = (env, argv) => {
           { from: 'manifest.json', to: 'manifest.json' },
           { from: 'assets', to: 'assets' },
           { from: 'styles', to: 'styles' },
+          { from: '_locales', to: '_locales' },
         ],
       }),
     ],

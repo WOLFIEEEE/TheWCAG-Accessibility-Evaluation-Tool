@@ -35,7 +35,16 @@ export type MessageAction =
   | 'sidebarLoaded'
   | 'highlightElement'
   | 'getOutline'
-  | 'desaturatePage';
+  | 'desaturatePage'
+  | 'inspectElement'
+  | 'getSettings'
+  | 'saveSettings'
+  | 'getComplianceReport'
+  | 'complianceData'
+  | 'getScreenReaderPreview'
+  | 'screenReaderData'
+  | 'getQuickFix'
+  | 'quickFixData';
 
 export interface Message<T = any> {
   action: string;
@@ -66,7 +75,9 @@ export type SidebarTab =
   | 'navigation'
   | 'structure'
   | 'contrast'
-  | 'order';
+  | 'order'
+  | 'compliance'
+  | 'settings';
 
 export interface ContrastSettings {
   foreground: string;
@@ -425,4 +436,198 @@ export interface BoundingRect {
   bottom: number;
   width: number;
   height: number;
+}
+
+// ============================================
+// Ignore List Types
+// ============================================
+
+export type IgnorePatternType = 'selector' | 'domain' | 'rule' | 'element';
+
+export interface IgnorePattern {
+  id: string;
+  type: IgnorePatternType;
+  pattern: string;
+  reason?: string;
+  createdAt: number;
+  enabled: boolean;
+}
+
+// ============================================
+// Custom Rule Types
+// ============================================
+
+export type CustomRuleCondition = 
+  | 'exists' 
+  | 'not-exists' 
+  | 'attribute-equals' 
+  | 'attribute-contains' 
+  | 'attribute-missing'
+  | 'text-contains'
+  | 'text-empty';
+
+export interface CustomRule {
+  id: string;
+  name: string;
+  category: RuleCategory;
+  selector: string;
+  condition: CustomRuleCondition;
+  conditionValue?: string;
+  attribute?: string;
+  message: string;
+  impact: ImpactLevel;
+  enabled: boolean;
+  createdAt: number;
+}
+
+// ============================================
+// Site Profile Types
+// ============================================
+
+export interface SiteProfile {
+  domain: string;
+  ignorePatterns: string[];
+  customRules: string[];
+  lastUsed: number;
+}
+
+// ============================================
+// Extension Settings Types
+// ============================================
+
+export interface ExtensionSettings {
+  ignorePatterns: IgnorePattern[];
+  customRules: CustomRule[];
+  siteProfiles: SiteProfile[];
+  globalIgnoreEnabled: boolean;
+  defaultWcagLevel: WcagLevel;
+  showNewIn22Badge: boolean;
+}
+
+// ============================================
+// WCAG 2.2 Compliance Types
+// ============================================
+
+export type WcagPrinciple = 'Perceivable' | 'Operable' | 'Understandable' | 'Robust';
+
+export type AutomationLevel = 'full' | 'partial' | 'manual';
+
+export interface WcagCriterion {
+  id: string;
+  name: string;
+  level: WcagLevel;
+  principle: WcagPrinciple;
+  guideline: string;
+  description: string;
+  url: string;
+  techniques: string[];
+  relatedRules: string[];
+  canAutomate: AutomationLevel;
+  isNew22: boolean;
+}
+
+export type CriterionStatus = 'passed' | 'failed' | 'manual' | 'not-applicable' | 'not-tested';
+
+export interface ComplianceResult {
+  criterion: WcagCriterion;
+  status: CriterionStatus;
+  issueCount: number;
+  issues: RuleResult[];
+  notes?: string;
+}
+
+export interface ComplianceReport {
+  wcagVersion: '2.2';
+  targetLevel: WcagLevel;
+  timestamp: number;
+  url: string;
+  results: ComplianceResult[];
+  summary: {
+    passed: number;
+    failed: number;
+    manual: number;
+    notApplicable: number;
+    total: number;
+    percentage: number;
+  };
+}
+
+// ============================================
+// Screen Reader Preview Types
+// ============================================
+
+export type ScreenReaderNodeType = 
+  | 'landmark' 
+  | 'heading' 
+  | 'link' 
+  | 'button' 
+  | 'form' 
+  | 'image' 
+  | 'list' 
+  | 'table' 
+  | 'text'
+  | 'navigation'
+  | 'region';
+
+export interface AccessibleNode {
+  role: string;
+  name: string;
+  description?: string;
+  value?: string;
+  states: string[];
+  properties: Record<string, string>;
+  level?: number;
+  children: AccessibleNode[];
+  selector: string;
+  issues: string[];
+}
+
+export interface ScreenReaderOutput {
+  type: ScreenReaderNodeType;
+  content: string;
+  announcement: string;
+  selector: string;
+  depth: number;
+  hasIssue: boolean;
+  issueMessage?: string;
+}
+
+// ============================================
+// Quick Fix Types
+// ============================================
+
+export type PlaceholderType = 'text' | 'select' | 'auto';
+
+export interface FixPlaceholder {
+  key: string;
+  label: string;
+  type: PlaceholderType;
+  options?: string[];
+  defaultValue?: string;
+  autoGenerate?: string; // Function name to call
+}
+
+export interface FixExample {
+  before: string;
+  after: string;
+  explanation: string;
+}
+
+export interface QuickFix {
+  ruleId: string;
+  title: string;
+  description: string;
+  template: string;
+  placeholders: FixPlaceholder[];
+  examples: FixExample[];
+  wcagCriteria: string[];
+  learnMoreUrl: string;
+}
+
+export interface GeneratedFix {
+  ruleId: string;
+  currentCode: string;
+  suggestedCode: string;
+  placeholders: Record<string, string>;
+  canAutocomplete: boolean;
 }

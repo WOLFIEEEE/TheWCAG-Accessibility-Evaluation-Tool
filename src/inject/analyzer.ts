@@ -16,6 +16,10 @@ let sidebarElement: HTMLIFrameElement | null = null;
 let tooltipElement: HTMLDivElement | null = null;
 const iconElements: Map<string, HTMLElement> = new Map();
 let isInitialized = false;
+let cleanupFunctions: Array<() => void> = [];
+
+// Track if extension has been cleaned up
+let isCleanedUp = false;
 
 // Helper Functions
 const calculateAimScore = (errors: number, alerts: number): number => {
@@ -272,7 +276,7 @@ const createIcon = (
   icon.addEventListener('mouseleave', hideTooltip);
   icon.addEventListener('click', () => {
     highlightElement(element as HTMLElement);
-    dispatchCustomEvent('showTooltip', { data: { ruleId, item, category } });
+    dispatchCustomEvent('showTooltip', { ruleId, item, category });
   });
   icon.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -350,6 +354,18 @@ const toggleStyles = (enabled: boolean): void => {
 
 // Reset
 const reset = (): void => {
+  isCleanedUp = true;
+  
+  // Run all cleanup functions
+  cleanupFunctions.forEach(fn => {
+    try {
+      fn();
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+  cleanupFunctions = [];
+
   removeSidebar();
   clearIcons();
   hideTooltip();
@@ -370,15 +386,19 @@ const reset = (): void => {
 
 // Message Listeners
 const setupMessageListeners = (): void => {
-  listenForCustomEvent('resetEvaluation', () => {
+  const cleanup1 = listenForCustomEvent('resetEvaluation', () => {
     reset();
   });
+  cleanupFunctions.push(cleanup1);
 
-  listenForCustomEvent<{ enabled: boolean }>('toggleStyles', data => {
+  const cleanup2 = listenForCustomEvent<{ enabled: boolean }>('toggleStyles', data => {
+    if (isCleanedUp) return;
     toggleStyles(data.enabled);
   });
+  cleanupFunctions.push(cleanup2);
 
-  listenForCustomEvent<{ visible: boolean }>('toggleIcons', data => {
+  const cleanup3 = listenForCustomEvent<{ visible: boolean }>('toggleIcons', data => {
+    if (isCleanedUp) return;
     iconsVisible = data.visible;
     if (iconsVisible) {
       injectIcons();
@@ -386,42 +406,200 @@ const setupMessageListeners = (): void => {
       clearIcons();
     }
   });
+  cleanupFunctions.push(cleanup3);
 
-  listenForCustomEvent<{ selector: string }>('highlightElement', data => {
+  const cleanup4 = listenForCustomEvent<{ selector: string }>('highlightElement', data => {
+    if (isCleanedUp) return;
     const element = document.querySelector(data.selector);
     if (element) highlightElement(element as HTMLElement);
   });
+  cleanupFunctions.push(cleanup4);
 
-  listenForCustomEvent('getNavigationOrder', () => {
+  const cleanup5 = listenForCustomEvent('getNavigationOrder', () => {
+    if (isCleanedUp) return;
     const navOrder = getNavigationOrder();
-    dispatchCustomEvent('navigationData', { data: navOrder });
+    // Convert to serializable format (remove DOM element references)
+    const serializableItems = navOrder.items.map(item => {
+      const el = item.element;
+      // Generate a useful selector
+      let selector = item.tagName;
+      if (el.id) {
+        selector = `#${el.id}`;
+      } else if (el.className && typeof el.className === 'string' && el.className.trim()) {
+        selector = `${item.tagName}.${el.className.trim().split(/\s+/)[0]}`;
+      }
+      
+      // Get role - use implicit role for common elements
+      let role = el.getAttribute('role');
+      if (!role) {
+        const implicitRoles: Record<string, string> = {
+          a: 'link',
+          button: 'button',
+          input: item.type === 'checkbox' ? 'checkbox' : 
+                 item.type === 'radio' ? 'radio' : 
+                 item.type === 'submit' ? 'button' : 'textbox',
+          select: 'combobox',
+          textarea: 'textbox',
+          img: 'img',
+          nav: 'navigation',
+          main: 'main',
+          header: 'banner',
+          footer: 'contentinfo',
+          aside: 'complementary',
+        };
+        role = implicitRoles[item.tagName] || item.tagName;
+      }
+      
+      return {
+        index: item.index,
+        tagName: item.tagName,
+        type: item.type,
+        text: item.text,
+        tabIndex: item.tabIndex,
+        isNative: item.isNative,
+        selector,
+        role,
+        accessibleName: item.text || `${role} element`,
+      };
+    });
+    dispatchCustomEvent('navigationData', serializableItems);
   });
+  cleanupFunctions.push(cleanup5);
 
-  listenForCustomEvent('getOutline', () => {
-    const headings = getHeadings();
-    const landmarks = getLandmarks();
-    dispatchCustomEvent('outlineData', { data: { headings, landmarks } });
+  const cleanup6 = listenForCustomEvent('getOutline', () => {
+    if (isCleanedUp) return;
+    const headingElements = getHeadings();
+    const landmarkElements = getLandmarks();
+    
+    // Convert heading elements to serializable format
+    const headings = headingElements.map(el => {
+      const tagName = el.tagName.toLowerCase();
+      const level = tagName.startsWith('h') ? parseInt(tagName[1]) : 
+                    parseInt(el.getAttribute('aria-level') || '2');
+      return {
+        level,
+        text: el.textContent?.trim() || '',
+        selector: generateSelector(el),
+        hasError: false,
+      };
+    });
+    
+    // Convert landmark elements to serializable format
+    const landmarks = landmarkElements.map(el => {
+      const role = el.getAttribute('role') || 
+                   getLandmarkRole(el.tagName.toLowerCase());
+      return {
+        role,
+        label: el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || '',
+        selector: generateSelector(el),
+      };
+    });
+    
+    dispatchCustomEvent('outlineData', { headings, landmarks });
   });
+  cleanupFunctions.push(cleanup6);
+  
+  // Helper to get implicit landmark role from tag name
+  const getLandmarkRole = (tagName: string): string => {
+    const roles: Record<string, string> = {
+      header: 'banner',
+      nav: 'navigation',
+      main: 'main',
+      aside: 'complementary',
+      footer: 'contentinfo',
+      search: 'search',
+      form: 'form',
+    };
+    return roles[tagName] || tagName;
+  };
+  
+  // Helper to generate a CSS selector for an element
+  const generateSelector = (el: Element): string => {
+    if (el.id) return `#${el.id}`;
+    const tagName = el.tagName.toLowerCase();
+    const className = el.className && typeof el.className === 'string' 
+      ? '.' + el.className.trim().split(/\s+/).join('.') 
+      : '';
+    return tagName + className;
+  };
 
-  listenForCustomEvent<{ enabled: boolean }>('desaturatePage', data => {
+  const cleanup7 = listenForCustomEvent<{ enabled: boolean }>('desaturatePage', data => {
+    if (isCleanedUp) return;
     document.body.style.filter = data.enabled ? 'grayscale(100%)' : '';
   });
+  cleanupFunctions.push(cleanup7);
+
+  // Handle compliance report request
+  const cleanup8 = listenForCustomEvent<{ level: string }>('getComplianceReport', data => {
+    if (isCleanedUp || !results) return;
+    
+    // Import compliance checker dynamically
+    import('../utils/compliance-checker').then(({ generateComplianceReport }) => {
+      const level = (data.level || 'AA') as 'A' | 'AA' | 'AAA';
+      const report = generateComplianceReport(results!, level);
+      dispatchCustomEvent('complianceData', report);
+    }).catch(err => {
+      console.error('TheWCAG: Failed to generate compliance report:', err);
+    });
+  });
+  cleanupFunctions.push(cleanup8);
+
+  // Handle screen reader preview request
+  const cleanup9 = listenForCustomEvent('getScreenReaderPreview', () => {
+    if (isCleanedUp) return;
+    
+    // Import screen reader simulator dynamically
+    import('../utils/screen-reader-simulator').then(({ generateFullPreview }) => {
+      const outputs = generateFullPreview();
+      dispatchCustomEvent('screenReaderData', outputs);
+    }).catch(err => {
+      console.error('TheWCAG: Failed to generate screen reader preview:', err);
+    });
+  });
+  cleanupFunctions.push(cleanup9);
 };
 
 // Evaluation
 const startEvaluation = async (): Promise<void> => {
+  if (isCleanedUp) return;
+  
   try {
+    console.log('TheWCAG: Starting evaluation...');
     createSidebar();
 
     const evalResults = await evaluatePage(document);
+    console.log('TheWCAG: Evaluation complete');
+    
+    if (isCleanedUp) return; // Check again after async operation
+    
     const contrastErrors = evalResults.categories.contrast?.length || 0;
+
+    // Create serializable versions of rule results (DOM elements can't be serialized to JSON)
+    const serializeResults = (items: RuleResult[]): RuleResult[] => 
+      items.map(item => ({
+        ruleId: item.ruleId,
+        category: item.category,
+        selector: item.selector,
+        xpath: item.xpath,
+        message: item.message,
+        impact: item.impact,
+        data: item.data,
+        element: null as unknown as Element, // Placeholder - element can't be serialized
+      }));
 
     results = {
       success: true,
       timestamp: Date.now(),
       url: window.location.href,
       title: document.title,
-      categories: evalResults.categories,
+      categories: {
+        error: serializeResults(evalResults.categories.error || []),
+        alert: serializeResults(evalResults.categories.alert || []),
+        feature: serializeResults(evalResults.categories.feature || []),
+        structure: serializeResults(evalResults.categories.structure || []),
+        aria: serializeResults(evalResults.categories.aria || []),
+        contrast: serializeResults(evalResults.categories.contrast || []),
+      },
       statistics: {
         totalElements: evalResults.statistics.totalElements,
         pageTitle: evalResults.statistics.pageTitle,
@@ -444,9 +622,10 @@ const startEvaluation = async (): Promise<void> => {
       aimScore: calculateAimScore(evalResults.statistics.errors, evalResults.statistics.alerts),
     };
 
-    dispatchCustomEvent('evaluationResults', { data: results });
+    console.log('TheWCAG: Dispatching results with summary:', results?.summary);
+    dispatchCustomEvent('evaluationResults', results);
 
-    if (iconsVisible) {
+    if (iconsVisible && !isCleanedUp) {
       injectIcons();
     }
   } catch (error) {
@@ -456,15 +635,27 @@ const startEvaluation = async (): Promise<void> => {
 
 // Initialize
 const init = (): void => {
-  if (isInitialized) return;
+  if (isInitialized || isCleanedUp) return;
   isInitialized = true;
 
-  dispatchCustomEvent('getExtensionUrl', {});
-
-  listenForCustomEvent<string>('setExtensionUrl', url => {
+  let urlReceived = false;
+  
+  const cleanup = listenForCustomEvent<string>('setExtensionUrl', url => {
+    if (isCleanedUp || urlReceived) return;
+    urlReceived = true;
     extensionUrl = url;
     startEvaluation();
   });
+  cleanupFunctions.push(cleanup);
+
+  // Request extension URL with retries
+  const requestUrl = (retries: number): void => {
+    if (urlReceived || isCleanedUp || retries <= 0) return;
+    dispatchCustomEvent('getExtensionUrl', {});
+    setTimeout(() => requestUrl(retries - 1), 100);
+  };
+  
+  requestUrl(10); // Try up to 10 times with 100ms delay
 
   setupMessageListeners();
 };

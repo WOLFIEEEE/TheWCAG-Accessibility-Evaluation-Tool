@@ -1,0 +1,317 @@
+{
+  "extensionName": {
+    "message": "TheWCAG Evaluation Extension",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Evaluate web accessibility within your browser using WCAG guidelines.",
+    "description": "The description of the extension"
+  },
+  "actionTitle": {
+    "message": "TheWCAG - Evaluate Accessibility",
+    "description": "Tooltip for the extension icon"
+  },
+  "toggleExtension": {
+    "message": "Toggle TheWCAG Evaluation Extension",
+    "description": "Description for the keyboard shortcut"
+  },
+  "contextMenuEvaluate": {
+    "message": "Evaluate this page with TheWCAG",
+    "description": "Context menu item text"
+  },
+  
+  "tabDetails": {
+    "message": "Details",
+    "description": "Details tab label"
+  },
+  "tabReference": {
+    "message": "Reference",
+    "description": "Reference tab label"
+  },
+  "tabOrder": {
+    "message": "Order",
+    "description": "Order tab label"
+  },
+  "tabStructure": {
+    "message": "Structure",
+    "description": "Structure tab label"
+  },
+  "tabContrast": {
+    "message": "Contrast",
+    "description": "Contrast tab label"
+  },
+  
+  "categoryErrors": {
+    "message": "Errors",
+    "description": "Error category label"
+  },
+  "categoryAlerts": {
+    "message": "Alerts",
+    "description": "Alerts category label"
+  },
+  "categoryFeatures": {
+    "message": "Features",
+    "description": "Features category label"
+  },
+  "categoryStructure": {
+    "message": "Structure",
+    "description": "Structure category label"
+  },
+  "categoryAria": {
+    "message": "ARIA",
+    "description": "ARIA category label"
+  },
+  "categoryContrast": {
+    "message": "Contrast",
+    "description": "Contrast category label"
+  },
+  
+  "loading": {
+    "message": "Evaluating page accessibility...",
+    "description": "Loading message while evaluating"
+  },
+  "noErrors": {
+    "message": "Congratulations! No errors were detected!",
+    "description": "Message when no errors are found"
+  },
+  "manualTestingNote": {
+    "message": "Manual testing is still necessary for full compliance.",
+    "description": "Note about manual testing"
+  },
+  
+  "aimScore": {
+    "message": "AIM Score",
+    "description": "Accessibility Impact Metric score label"
+  },
+  "outOf10": {
+    "message": "out of 10",
+    "description": "Score suffix"
+  },
+  
+  "stylesOn": {
+    "message": "ON",
+    "description": "Styles toggle on state"
+  },
+  "stylesOff": {
+    "message": "OFF",
+    "description": "Styles toggle off state"
+  },
+  "styles": {
+    "message": "Styles:",
+    "description": "Styles toggle label"
+  },
+  
+  "searchPlaceholder": {
+    "message": "Search issues...",
+    "description": "Search input placeholder"
+  },
+  "filterAll": {
+    "message": "All",
+    "description": "Filter all button"
+  },
+  "filterErrors": {
+    "message": "Errors",
+    "description": "Filter errors button"
+  },
+  "filterAlerts": {
+    "message": "Alerts",
+    "description": "Filter alerts button"
+  },
+  
+  "exportJSON": {
+    "message": "JSON",
+    "description": "Export as JSON button"
+  },
+  "exportCSV": {
+    "message": "CSV",
+    "description": "Export as CSV button"
+  },
+  "exportHTML": {
+    "message": "HTML",
+    "description": "Export as HTML button"
+  },
+  "exportCopy": {
+    "message": "Copy",
+    "description": "Copy to clipboard button"
+  },
+  
+  "viewDocumentation": {
+    "message": "View documentation",
+    "description": "Reference button tooltip"
+  },
+  "inspectElement": {
+    "message": "Inspect in DevTools",
+    "description": "Inspect button tooltip"
+  },
+  
+  "inspectNotificationTitle": {
+    "message": "Element ready for inspection!",
+    "description": "Inspect notification title"
+  },
+  "inspectNotificationBody": {
+    "message": "Open DevTools (F12 or Cmd+Opt+I) and type in Console:",
+    "description": "Inspect notification body"
+  },
+  "inspectNotificationCode": {
+    "message": "inspect($wcag)",
+    "description": "Code to type in console"
+  },
+  
+  "contrastRatio": {
+    "message": "Contrast Ratio:",
+    "description": "Contrast ratio label"
+  },
+  "textSize": {
+    "message": "Text Size:",
+    "description": "Text size label"
+  },
+  "wcagAA": {
+    "message": "WCAG AA:",
+    "description": "WCAG AA label"
+  },
+  "wcagAAA": {
+    "message": "WCAG AAA:",
+    "description": "WCAG AAA label"
+  },
+  "pass": {
+    "message": "Pass",
+    "description": "Pass result"
+  },
+  "fail": {
+    "message": "Fail",
+    "description": "Fail result"
+  },
+  
+  "foreground": {
+    "message": "Foreground",
+    "description": "Foreground color label"
+  },
+  "background": {
+    "message": "Background",
+    "description": "Background color label"
+  },
+  "hex": {
+    "message": "Hex",
+    "description": "Hex color input label"
+  },
+  "picker": {
+    "message": "Picker",
+    "description": "Color picker label"
+  },
+  "alpha": {
+    "message": "Alpha",
+    "description": "Alpha input label"
+  },
+  "lightness": {
+    "message": "Lightness",
+    "description": "Lightness slider label"
+  },
+  
+  "desaturatePage": {
+    "message": "Desaturate page",
+    "description": "Desaturate button text"
+  },
+  "restoreColors": {
+    "message": "Restore colors",
+    "description": "Restore colors button text"
+  },
+  
+  "refreshOrder": {
+    "message": "Refresh Navigation Order",
+    "description": "Refresh order button text"
+  },
+  "showHideIcons": {
+    "message": "Show/Hide Icons",
+    "description": "Toggle icons button text"
+  },
+  "orderDescription": {
+    "message": "Order, role, and accessible name for all navigable elements.",
+    "description": "Order panel description"
+  },
+  "noFocusableElements": {
+    "message": "No focusable elements found",
+    "description": "No focusable elements message"
+  },
+  
+  "noHeadingStructure": {
+    "message": "This page has no heading structure!",
+    "description": "No headings warning"
+  },
+  "landmarks": {
+    "message": "Landmarks",
+    "description": "Landmarks section header"
+  },
+  
+  "referencePlaceholder": {
+    "message": "Click an icon in the Details panel to view documentation.",
+    "description": "Reference placeholder text"
+  },
+  "viewIconIndex": {
+    "message": "View the icon index",
+    "description": "View icon index link text"
+  },
+  
+  "whatItMeans": {
+    "message": "What It Means",
+    "description": "Reference section: what it means"
+  },
+  "whyItMatters": {
+    "message": "Why It Matters",
+    "description": "Reference section: why it matters"
+  },
+  "whatToDo": {
+    "message": "What To Do",
+    "description": "Reference section: what to do"
+  },
+  "theAlgorithm": {
+    "message": "The Algorithm",
+    "description": "Reference section: the algorithm"
+  },
+  "wcagGuidelines": {
+    "message": "WCAG Guidelines",
+    "description": "Reference section: WCAG guidelines"
+  },
+  
+  "errorAltMissing": {
+    "message": "Image is missing alt attribute",
+    "description": "alt_missing rule message"
+  },
+  "errorLabelMissing": {
+    "message": "Form control is missing a label",
+    "description": "label_missing rule message"
+  },
+  "errorLinkEmpty": {
+    "message": "Link has no text or accessible name",
+    "description": "link_empty rule message"
+  },
+  "errorButtonEmpty": {
+    "message": "Button has no text or accessible name",
+    "description": "button_empty rule message"
+  },
+  "errorHeadingEmpty": {
+    "message": "Heading element is empty",
+    "description": "heading_empty rule message"
+  },
+  "errorLanguageMissing": {
+    "message": "Page language is not identified",
+    "description": "language_missing rule message"
+  },
+  "errorTitleMissing": {
+    "message": "Page title is missing",
+    "description": "title_invalid rule message"
+  },
+  
+  "reportGenerated": {
+    "message": "Report generated successfully!",
+    "description": "Toast message when report is generated"
+  },
+  "reportCopied": {
+    "message": "Report copied to clipboard!",
+    "description": "Toast message when report is copied"
+  },
+  "exportFailed": {
+    "message": "Export failed. Please try again.",
+    "description": "Toast message when export fails"
+  }
+}
+

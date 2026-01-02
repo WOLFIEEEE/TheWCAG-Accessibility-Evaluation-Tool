@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TheWCAG Evaluation Extension</title>
   <link rel="stylesheet" href="../styles/sidebar.css">
+  <link rel="stylesheet" href="../styles/features.css">
 </head>
 <body>
   <div id="sidebar-container" role="region" aria-label="TheWCAG Sidebar">
@@ -57,6 +58,12 @@
         </button>
         <button id="tab-contrast" class="tab" role="tab" aria-selected="false" aria-controls="panel-contrast">
           Contrast
+        </button>
+        <button id="tab-compliance" class="tab" role="tab" aria-selected="false" aria-controls="panel-compliance">
+          WCAG 2.2
+        </button>
+        <button id="tab-settings" class="tab" role="tab" aria-selected="false" aria-controls="panel-settings">
+          ⚙️
         </button>
       </div>
 
@@ -148,6 +155,35 @@
             <div id="ref-algorithm"></div>
             <h3>WCAG Guidelines</h3>
             <ul id="ref-guidelines"></ul>
+            
+            <!-- Quick Fix Section -->
+            <div id="quick-fix-section" class="hidden">
+              <h3>🔧 Quick Fix</h3>
+              
+              <div class="fix-code-block">
+                <div class="fix-label">Current Code:</div>
+                <pre><code id="fix-current"></code></pre>
+              </div>
+              
+              <div id="fix-inputs">
+                <!-- Dynamic form fields will be inserted here -->
+              </div>
+              
+              <div class="fix-code-block" style="position: relative;">
+                <div class="fix-label">Suggested Fix:</div>
+                <pre><code id="fix-suggested"></code></pre>
+                <button id="copy-fix-btn" class="copy-btn">Copy</button>
+              </div>
+              
+              <details class="fix-examples">
+                <summary>See examples</summary>
+                <div id="fix-examples-list"></div>
+              </details>
+              
+              <a id="fix-learn-more" href="#" target="_blank" rel="noopener" class="learn-more-link">
+                Learn more about this fix
+              </a>
+            </div>
           </div>
           <div id="reference-index" class="hidden"></div>
         </div>
@@ -173,6 +209,40 @@
             <div id="heading-outline"></div>
             <h3>Landmarks</h3>
             <ul id="landmark-list"></ul>
+            
+            <!-- Screen Reader Preview -->
+            <div id="screen-reader-preview">
+              <div class="sr-header">
+                <h3>🔊 Screen Reader Preview</h3>
+                <select id="sr-mode">
+                  <option value="all">All Content</option>
+                  <option value="headings">Headings (H key)</option>
+                  <option value="landmarks">Landmarks (D key)</option>
+                  <option value="links">Links (K key)</option>
+                  <option value="buttons">Buttons (B key)</option>
+                  <option value="forms">Form Controls (F key)</option>
+                  <option value="tables">Tables (T key)</option>
+                  <option value="images">Images (G key)</option>
+                  <option value="issues">Issues Only (E key)</option>
+                </select>
+              </div>
+              
+              <div id="sr-output" class="sr-output" role="log" aria-live="polite">
+                <p class="loading">Generating screen reader preview...</p>
+              </div>
+              
+              <div class="sr-footer">
+                <button id="sr-export">Export as Text</button>
+                <span class="sr-hint">Click items to highlight on page</span>
+              </div>
+              
+              <div class="sr-nav-keys">
+                <span class="sr-nav-key"><kbd>H</kbd> Headings</span>
+                <span class="sr-nav-key"><kbd>D</kbd> Landmarks</span>
+                <span class="sr-nav-key"><kbd>K</kbd> Links</span>
+                <span class="sr-nav-key"><kbd>F</kbd> Forms</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -263,8 +333,122 @@
             </p>
           </div>
         </div>
+
+        <!-- Compliance Panel -->
+        <div id="panel-compliance" class="panel" role="tabpanel" aria-labelledby="tab-compliance" hidden>
+          <div id="compliance-content">
+            <div class="compliance-header">
+              <div class="compliance-level-select">
+                <label for="wcag-level">WCAG 2.2 Level:</label>
+                <select id="wcag-level">
+                  <option value="A">Level A (32 criteria)</option>
+                  <option value="AA" selected>Level AA (56 criteria)</option>
+                  <option value="AAA">Level AAA (87 criteria)</option>
+                </select>
+              </div>
+              <div class="compliance-score">
+                <span class="score-value" id="compliance-percentage">-%</span>
+                <span class="score-label">Compliant</span>
+              </div>
+            </div>
+            
+            <div class="compliance-filters">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="passed">✓ Passed</button>
+              <button class="filter-btn" data-filter="failed">✗ Failed</button>
+              <button class="filter-btn" data-filter="manual">? Manual</button>
+              <button class="filter-btn" data-filter="new22">🆕 New in 2.2</button>
+            </div>
+            
+            <div id="compliance-list" class="compliance-list">
+              <p class="loading">Loading compliance data...</p>
+            </div>
+            
+            <div class="compliance-export">
+              <button id="export-compliance">Export Compliance Report</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings" hidden>
+          <div id="settings-content">
+            <!-- Global Settings -->
+            <div class="settings-section">
+              <h3>🌐 Global Settings</h3>
+              <div class="settings-toggle">
+                <label for="global-ignore-enabled">Enable ignore patterns</label>
+                <label class="switch">
+                  <input type="checkbox" id="global-ignore-enabled" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="settings-toggle">
+                <label for="show-new22-badge">Show "New in 2.2" badges</label>
+                <label class="switch">
+                  <input type="checkbox" id="show-new22-badge" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="settings-toggle">
+                <label for="default-wcag-level">Default WCAG Level</label>
+                <select id="default-wcag-level">
+                  <option value="A">Level A</option>
+                  <option value="AA" selected>Level AA</option>
+                  <option value="AAA">Level AAA</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Ignore Patterns -->
+            <div class="settings-section">
+              <h3>🚫 Ignore Patterns</h3>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                Exclude specific elements, selectors, rules, or domains from evaluation.
+              </p>
+              <div id="ignore-list" class="ignore-list">
+                <p class="empty-message">No ignore patterns defined.</p>
+              </div>
+              <div class="add-pattern-form">
+                <select id="ignore-pattern-type">
+                  <option value="selector">CSS Selector</option>
+                  <option value="rule">Rule ID</option>
+                  <option value="domain">Domain</option>
+                  <option value="element">Element Type</option>
+                </select>
+                <input type="text" id="ignore-pattern-value" placeholder="Enter pattern...">
+                <input type="text" id="ignore-pattern-reason" placeholder="Reason (optional)">
+                <button id="add-ignore-pattern">Add Pattern</button>
+              </div>
+            </div>
+            
+            <!-- Custom Rules -->
+            <div class="settings-section">
+              <h3>📏 Custom Rules</h3>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                Create custom accessibility checks for your specific needs.
+              </p>
+              <div id="custom-rules-list">
+                <p class="empty-message">No custom rules defined.</p>
+              </div>
+              <button id="add-custom-rule" class="add-btn">+ Add Custom Rule</button>
+            </div>
+            
+            <!-- Import/Export -->
+            <div class="settings-section">
+              <h3>💾 Backup & Restore</h3>
+              <div class="import-export-btns">
+                <button id="export-settings">Export Settings</button>
+                <button id="import-settings">Import Settings</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification hidden" role="alert"></div>
   </div>
   
   <script src="sidebar.js"></script>

@@ -5,9 +5,34 @@
 import { Message, MessageAction, PortMessage } from '../types';
 
 /**
+ * Check if extension context is still valid
+ * This prevents "Extension context invalidated" errors
+ */
+export function isContextValid(): boolean {
+  try {
+    return !!(chrome?.runtime?.id);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safe wrapper for chrome API calls
+ */
+export function safeChrome<T>(fn: () => T, fallback: T): T {
+  if (!isContextValid()) return fallback;
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Safe port connection with error handling
  */
 export function safeConnect(tabId: number, name: string): chrome.runtime.Port | null {
+  if (!isContextValid()) return null;
   try {
     const port = chrome.tabs.connect(tabId, { name });
     port.onDisconnect.addListener(() => {
@@ -24,7 +49,7 @@ export function safeConnect(tabId: number, name: string): chrome.runtime.Port | 
  * Safe port message posting
  */
 export function safePostMessage(port: chrome.runtime.Port | null, message: PortMessage): boolean {
-  if (!port) return false;
+  if (!port || !isContextValid()) return false;
 
   try {
     port.postMessage(message);
@@ -66,6 +91,7 @@ export async function sendToSidebar<T>(
  * Wake service worker
  */
 export async function wakeServiceWorker(): Promise<void> {
+  if (!isContextValid()) return;
   return new Promise(resolve => {
     try {
       chrome.runtime.sendMessage({ type: 'WAKE' }, () => {
@@ -148,6 +174,7 @@ export async function retryWithBackoff<T>(
  * Ping tab to check if content script is active
  */
 export async function pingContentScript(tabId: number): Promise<boolean> {
+  if (!isContextValid()) return false;
   try {
     await chrome.tabs.sendMessage(tabId, { type: 'PING' });
     return true;
@@ -157,14 +184,28 @@ export async function pingContentScript(tabId: number): Promise<boolean> {
 }
 
 /**
- * Ensure content script is injected
+ * Ensure content script is injected and ready
  */
 export async function ensureContentScript(tabId: number): Promise<void> {
+  if (!isContextValid()) return;
   const isActive = await pingContentScript(tabId);
   if (isActive) return;
 
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    files: ['content/content-script.js'],
-  });
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content/content-script.js'],
+    });
+    
+    // Wait for content script to initialize and verify it's ready
+    let retries = 10;
+    while (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const ready = await pingContentScript(tabId);
+      if (ready) return;
+      retries--;
+    }
+  } catch {
+    // Tab may not exist or scripting not allowed
+  }
 }

@@ -11,11 +11,14 @@
     "generate-icons": "node scripts/generate-icons.js",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "clean": "rm -rf dist",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "clean": "rm -rf dist coverage",
     "typecheck": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run lint && npm run test",
     "prepare": "npm run generate-icons && npm run build"
   },
   "keywords": [
@@ -30,6 +33,7 @@
   "author": "TheWCAG Team",
   "license": "MIT",
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
     "@types/chrome": "^0.0.268",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.30",

@@ -12,6 +12,9 @@ import { featureRules } from './features';
 import { structureRules } from './structure';
 import { ariaRules } from './aria';
 import { contrastRules } from './contrast';
+import { keyboardRules } from './keyboard';
+import { mobileRules } from './mobile';
+import { mediaRules } from './media';
 
 // ============================================
 // Rule Factory
@@ -62,8 +65,8 @@ export function createRule(
  * All accessibility rules organized by category
  */
 export const rulesByCategory = {
-  error: errorRules,
-  alert: alertRules,
+  error: [...errorRules, ...keyboardRules.filter(r => r.category === 'error'), ...mobileRules.filter(r => r.category === 'error'), ...mediaRules.filter(r => r.category === 'error')],
+  alert: [...alertRules, ...keyboardRules.filter(r => r.category === 'alert'), ...mobileRules.filter(r => r.category === 'alert'), ...mediaRules.filter(r => r.category === 'alert')],
   feature: featureRules,
   structure: structureRules,
   aria: ariaRules,
@@ -80,6 +83,9 @@ export const allRules: AccessibilityRule[] = [
   ...structureRules,
   ...ariaRules,
   ...contrastRules,
+  ...keyboardRules,
+  ...mobileRules,
+  ...mediaRules,
 ];
 
 /**
@@ -313,3 +319,6 @@ export { featureRules } from './features';
 export { structureRules } from './structure';
 export { ariaRules } from './aria';
 export { contrastRules } from './contrast';
+export { keyboardRules } from './keyboard';
+export { mobileRules } from './mobile';
+export { mediaRules } from './media';
