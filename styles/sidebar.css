@@ -261,12 +261,6 @@ input:focus + .slider {
   font-size: 12px;
 }
 
-.toggle-off, .toggle-on {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
 /* ============================================
    Tab Navigation - Multi-Row Grid Layout
    ============================================ */
