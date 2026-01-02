@@ -39,31 +39,31 @@
       <!-- Tab Navigation - Grid Layout -->
       <div id="tabs" role="tablist" aria-label="Result sections">
         <button id="tab-details" class="tab active" role="tab" aria-selected="true" aria-controls="panel-details">
-          <span class="tab-icon">📋</span>
+          <span class="tab-icon icon-details"></span>
           <span class="tab-label">Details</span>
         </button>
         <button id="tab-reference" class="tab" role="tab" aria-selected="false" aria-controls="panel-reference">
-          <span class="tab-icon">📖</span>
+          <span class="tab-icon icon-reference"></span>
           <span class="tab-label">Reference</span>
         </button>
         <button id="tab-order" class="tab" role="tab" aria-selected="false" aria-controls="panel-order">
-          <span class="tab-icon">🔢</span>
+          <span class="tab-icon icon-order"></span>
           <span class="tab-label">Order</span>
         </button>
         <button id="tab-structure" class="tab" role="tab" aria-selected="false" aria-controls="panel-structure">
-          <span class="tab-icon">🏗️</span>
+          <span class="tab-icon icon-structure"></span>
           <span class="tab-label">Structure</span>
         </button>
         <button id="tab-contrast" class="tab" role="tab" aria-selected="false" aria-controls="panel-contrast">
-          <span class="tab-icon">🎨</span>
+          <span class="tab-icon icon-contrast"></span>
           <span class="tab-label">Contrast</span>
         </button>
         <button id="tab-compliance" class="tab" role="tab" aria-selected="false" aria-controls="panel-compliance">
-          <span class="tab-icon">✓</span>
+          <span class="tab-icon icon-compliance"></span>
           <span class="tab-label">WCAG</span>
         </button>
         <button id="tab-settings" class="tab" role="tab" aria-selected="false" aria-controls="panel-settings">
-          <span class="tab-icon">⚙️</span>
+          <span class="tab-icon icon-settings"></span>
           <span class="tab-label">Settings</span>
         </button>
       </div>
@@ -75,7 +75,7 @@
           <!-- Summary Section -->
           <section id="summary" aria-labelledby="summary-heading">
             <div class="section-header">
-              <h3 id="summary-heading">📊 Evaluation Summary</h3>
+              <h3 id="summary-heading"><span class="section-icon icon-chart"></span> Evaluation Summary</h3>
               <p class="section-description">Overview of accessibility issues found on this page</p>
             </div>
             
@@ -120,10 +120,10 @@
             
             <!-- Legend -->
             <div class="summary-legend">
-              <span class="legend-item legend-critical">🔴 Critical - Must fix</span>
-              <span class="legend-item legend-warning">🟡 Warning - Review needed</span>
-              <span class="legend-item legend-good">🟢 Good - Properly implemented</span>
-              <span class="legend-item legend-info">🔵 Info - Structural elements</span>
+              <span class="legend-item legend-critical"><span class="legend-dot dot-critical"></span> Critical - Must fix</span>
+              <span class="legend-item legend-warning"><span class="legend-dot dot-warning"></span> Warning - Review needed</span>
+              <span class="legend-item legend-good"><span class="legend-dot dot-good"></span> Good - Properly implemented</span>
+              <span class="legend-item legend-info"><span class="legend-dot dot-info"></span> Info - Structural elements</span>
             </div>
             
             <p id="congrats" class="hidden">
@@ -135,7 +135,7 @@
             <!-- AIM Score -->
             <div id="aim-score" title="Accessibility Impact Metric - Higher is better. Based on issue severity and count.">
               <div class="aim-header">
-                <span id="aim-label">🎯 Accessibility Score</span>
+                <span id="aim-label"><span class="section-icon icon-target"></span> Accessibility Score</span>
                 <span class="aim-tooltip">?</span>
               </div>
               <div class="aim-display">
@@ -156,7 +156,7 @@
           <!-- Issues Section -->
           <section id="issues-section" aria-labelledby="issues-heading">
             <div class="section-header">
-              <h3 id="issues-heading">🔍 Detected Issues</h3>
+              <h3 id="issues-heading"><span class="section-icon icon-search"></span> Detected Issues</h3>
               <p class="section-description">Click any item to see details and suggested fixes</p>
             </div>
             
@@ -196,7 +196,7 @@
             
             <!-- Quick Fix Section -->
             <div id="quick-fix-section" class="hidden">
-              <h3>🔧 Quick Fix</h3>
+              <h3><span class="section-icon icon-wrench"></span> Quick Fix</h3>
               
               <div class="fix-code-block">
                 <div class="fix-label">Current Code:</div>
@@ -244,7 +244,7 @@
         <div id="panel-structure" class="panel" role="tabpanel" aria-labelledby="tab-structure" hidden>
           <div id="structure-content">
             <div id="structure-empty" class="hidden">
-              <p>⚠️ This page has no heading structure!</p>
+              <p><span class="inline-icon icon-warning"></span> This page has no heading structure!</p>
             </div>
             <div id="heading-outline"></div>
             <h3>Landmarks</h3>
@@ -253,7 +253,7 @@
             <!-- Screen Reader Preview -->
             <div id="screen-reader-preview">
               <div class="sr-header">
-                <h3>🔊 Screen Reader Preview</h3>
+                <h3><span class="section-icon icon-speaker"></span> Screen Reader Preview</h3>
                 <select id="sr-mode">
                   <option value="all">All Content</option>
                   <option value="headings">Headings</option>
@@ -393,10 +393,10 @@
             
             <div class="compliance-filters">
               <button class="filter-btn active" data-filter="all">All</button>
-              <button class="filter-btn" data-filter="passed">✓ Passed</button>
-              <button class="filter-btn" data-filter="failed">✗ Failed</button>
-              <button class="filter-btn" data-filter="manual">? Manual</button>
-              <button class="filter-btn" data-filter="new22">🆕 2.2</button>
+              <button class="filter-btn" data-filter="passed"><span class="filter-icon icon-check"></span> Passed</button>
+              <button class="filter-btn" data-filter="failed"><span class="filter-icon icon-x"></span> Failed</button>
+              <button class="filter-btn" data-filter="manual"><span class="filter-icon icon-question"></span> Manual</button>
+              <button class="filter-btn" data-filter="new22"><span class="filter-icon icon-new"></span> 2.2</button>
             </div>
             
             <div id="compliance-list" class="compliance-list">
@@ -414,7 +414,7 @@
           <div id="settings-content">
             <!-- Global Settings -->
             <div class="settings-section">
-              <h3>🌐 Global Settings</h3>
+              <h3><span class="section-icon icon-globe"></span> Global Settings</h3>
               <div class="settings-toggle">
                 <label for="global-ignore-enabled">Enable ignore patterns</label>
                 <label class="switch">
@@ -441,7 +441,7 @@
             
             <!-- Ignore Patterns -->
             <div class="settings-section">
-              <h3>🚫 Ignore Patterns</h3>
+              <h3><span class="section-icon icon-ban"></span> Ignore Patterns</h3>
               <div id="ignore-list" class="ignore-list">
                 <p class="empty-message">No ignore patterns defined.</p>
               </div>
@@ -460,7 +460,7 @@
             
             <!-- Custom Rules -->
             <div class="settings-section">
-              <h3>📏 Custom Rules</h3>
+              <h3><span class="section-icon icon-ruler"></span> Custom Rules</h3>
               <div id="custom-rules-list">
                 <p class="empty-message">No custom rules defined.</p>
               </div>
@@ -469,7 +469,7 @@
             
             <!-- Import/Export -->
             <div class="settings-section">
-              <h3>💾 Backup & Restore</h3>
+              <h3><span class="section-icon icon-save"></span> Backup & Restore</h3>
               <div class="import-export-btns">
                 <button id="export-settings">Export</button>
                 <button id="import-settings">Import</button>

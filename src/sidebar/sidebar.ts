@@ -229,39 +229,44 @@ function updateIconList() {
       label: 'Errors', 
       className: 'error',
       description: 'Critical accessibility barriers that must be fixed. These prevent users with disabilities from accessing content.',
-      priority: '🔴 High Priority'
+      priority: 'High Priority',
+      priorityClass: 'priority-critical'
     },
     { 
       key: 'alert' as const, 
       label: 'Alerts', 
       className: 'alert',
       description: 'Potential issues that need manual review. Some may be false positives depending on context.',
-      priority: '🟡 Review Needed'
+      priority: 'Review Needed',
+      priorityClass: 'priority-warning'
     },
     { 
       key: 'feature' as const, 
       label: 'Features', 
       className: 'feature',
       description: 'Accessibility features properly implemented. These help users with disabilities navigate your site.',
-      priority: '🟢 Good Practice'
+      priority: 'Good Practice',
+      priorityClass: 'priority-good'
     },
     { 
       key: 'structure' as const, 
       label: 'Structural Elements', 
       className: 'structure',
       description: 'Page structure elements like headings, lists, and tables that organize content for all users.',
-      priority: '🔵 Informational'
+      priority: 'Informational',
+      priorityClass: 'priority-info'
     },
     { 
       key: 'aria' as const, 
       label: 'ARIA Attributes', 
       className: 'aria',
       description: 'Accessible Rich Internet Applications (ARIA) attributes providing extra context to assistive technologies.',
-      priority: '🟣 Semantic Info'
+      priority: 'Semantic Info',
+      priorityClass: 'priority-aria'
     },
   ];
 
-  categories.forEach(({ key, label, className, description, priority }) => {
+  categories.forEach(({ key, label, className, description, priority, priorityClass }) => {
     const items = state.results!.categories[key];
     if (!items || items.length === 0) return;
 
@@ -277,7 +282,7 @@ function updateIconList() {
           <span class="category-icon ${className}-icon"></span>
           <span class="category-count">${totalCount}</span>
           ${label}
-          <span class="category-priority">${priority}</span>
+          <span class="category-priority ${priorityClass}">${priority}</span>
         </h3>
         <p class="category-description">${description}</p>
       </div>
@@ -340,7 +345,7 @@ function createGroupItem(group: RuleResultGroup, className: string): HTMLLIEleme
       <span class="rule-count">${group.count}</span>
       <span class="rule-name">${group.ruleName}</span>
       <button class="reference-btn" data-rule-id="${group.ruleId}" title="View documentation">
-        📖
+        <span class="btn-icon icon-book"></span>
       </button>
     </h4>
     <ul class="item-list"></ul>
@@ -948,7 +953,7 @@ function renderComplianceList() {
   if (summary.manual > 0) {
     warningBanner = `
       <div class="compliance-warning">
-        <strong>⚠️ Manual Testing Required</strong>
+        <strong><span class="inline-icon icon-warning"></span> Manual Testing Required</strong>
         <p>${summary.manual} criteria cannot be verified automatically and require human review. 
         Full WCAG compliance cannot be determined by automated testing alone.</p>
       </div>
@@ -957,8 +962,8 @@ function renderComplianceList() {
 
   list.innerHTML = warningBanner + filteredResults.map(result => {
     const statusIcon = {
-      'passed': '✓',
-      'failed': '✗',
+      'passed': '<span class="status-icon status-passed"></span>',
+      'failed': '<span class="status-icon status-failed"></span>',
       'manual': '?',
       'not-applicable': '—',
       'not-tested': '○'
@@ -1038,10 +1043,14 @@ function generateComplianceText(report: ComplianceReport): string {
   ];
 
   report.results.forEach(result => {
-    const status = { 
-      passed: '✓', failed: '✗', manual: '?', 
-      'not-applicable': '—', 'not-tested': '○' 
-    }[result.status];
+    const statusIcons: Record<string, string> = { 
+      passed: '<span class="status-icon status-passed"></span>', 
+      failed: '<span class="status-icon status-failed"></span>', 
+      manual: '<span class="status-icon status-manual"></span>', 
+      'not-applicable': '<span class="status-icon status-na"></span>', 
+      'not-tested': '<span class="status-icon status-untested"></span>' 
+    };
+    const status = statusIcons[result.status] || statusIcons['not-tested'];
     lines.push(`[${status}] ${result.criterion.id} ${result.criterion.name}`);
   });
 
@@ -1091,7 +1100,7 @@ function renderIgnoreList() {
       <span class="ignore-item-type">${pattern.type}</span>
       <div class="ignore-item-actions">
         <button class="toggle-pattern-btn" title="${pattern.enabled ? 'Disable' : 'Enable'}">
-          ${pattern.enabled ? '✓' : '○'}
+          <span class="toggle-icon ${pattern.enabled ? 'toggle-on' : 'toggle-off'}"></span>
         </button>
         <button class="delete-pattern-btn" title="Delete">✕</button>
       </div>
