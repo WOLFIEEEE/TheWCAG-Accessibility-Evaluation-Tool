@@ -18,6 +18,7 @@ import {
   ScreenReaderOutput,
   QuickFix,
 } from '../types';
+import { generateComplianceReport } from '../utils/compliance-checker';
 import {
   parseColor,
   rgbToHex,
@@ -833,14 +834,24 @@ let currentComplianceFilter = 'all';
 function updateCompliancePanel() {
   if (!state.results) {
     const list = document.getElementById('compliance-list');
-    if (list) list.innerHTML = '<p>Evaluate a page first to see compliance data.</p>';
+    if (list) list.innerHTML = '<p class="empty-message">Evaluate a page first to see compliance data.</p>';
+    const percentage = document.getElementById('compliance-percentage');
+    if (percentage) percentage.textContent = '-%';
     return;
   }
 
-  // Request compliance report from background
-  sendMessage('getComplianceReport', { 
-    level: (document.getElementById('wcag-level') as HTMLSelectElement)?.value || 'AA' 
-  });
+  // Generate compliance report directly in the sidebar
+  const levelSelect = document.getElementById('wcag-level') as HTMLSelectElement;
+  const level = (levelSelect?.value || 'AA') as WcagLevel;
+  
+  try {
+    const report = generateComplianceReport(state.results, level);
+    handleComplianceData(report);
+  } catch (err) {
+    console.error('TheWCAG Sidebar: Failed to generate compliance report:', err);
+    const list = document.getElementById('compliance-list');
+    if (list) list.innerHTML = '<p class="empty-message">Error generating compliance report.</p>';
+  }
 }
 
 function handleComplianceData(report: ComplianceReport) {
