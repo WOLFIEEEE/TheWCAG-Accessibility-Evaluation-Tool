@@ -222,15 +222,46 @@ function updateIconList() {
 
   iconList.innerHTML = '';
 
+  // Category definitions with descriptions for users
   const categories = [
-    { key: 'error' as const, label: 'Errors', className: 'error' },
-    { key: 'alert' as const, label: 'Alerts', className: 'alert' },
-    { key: 'feature' as const, label: 'Features', className: 'feature' },
-    { key: 'structure' as const, label: 'Structural Elements', className: 'structure' },
-    { key: 'aria' as const, label: 'ARIA', className: 'aria' },
+    { 
+      key: 'error' as const, 
+      label: 'Errors', 
+      className: 'error',
+      description: 'Critical accessibility barriers that must be fixed. These prevent users with disabilities from accessing content.',
+      priority: '🔴 High Priority'
+    },
+    { 
+      key: 'alert' as const, 
+      label: 'Alerts', 
+      className: 'alert',
+      description: 'Potential issues that need manual review. Some may be false positives depending on context.',
+      priority: '🟡 Review Needed'
+    },
+    { 
+      key: 'feature' as const, 
+      label: 'Features', 
+      className: 'feature',
+      description: 'Accessibility features properly implemented. These help users with disabilities navigate your site.',
+      priority: '🟢 Good Practice'
+    },
+    { 
+      key: 'structure' as const, 
+      label: 'Structural Elements', 
+      className: 'structure',
+      description: 'Page structure elements like headings, lists, and tables that organize content for all users.',
+      priority: '🔵 Informational'
+    },
+    { 
+      key: 'aria' as const, 
+      label: 'ARIA Attributes', 
+      className: 'aria',
+      description: 'Accessible Rich Internet Applications (ARIA) attributes providing extra context to assistive technologies.',
+      priority: '🟣 Semantic Info'
+    },
   ];
 
-  categories.forEach(({ key, label, className }) => {
+  categories.forEach(({ key, label, className, description, priority }) => {
     const items = state.results!.categories[key];
     if (!items || items.length === 0) return;
 
@@ -241,11 +272,15 @@ function updateIconList() {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = `icon-group ${className}`;
     categoryDiv.innerHTML = `
-      <h3>
-        <span class="category-icon ${className}-icon"></span>
-        <span class="category-count">${totalCount}</span>
-        ${label}
-      </h3>
+      <div class="category-header">
+        <h3>
+          <span class="category-icon ${className}-icon"></span>
+          <span class="category-count">${totalCount}</span>
+          ${label}
+          <span class="category-priority">${priority}</span>
+        </h3>
+        <p class="category-description">${description}</p>
+      </div>
     `;
 
     const groupList = document.createElement('ul');
@@ -258,6 +293,18 @@ function updateIconList() {
     categoryDiv.appendChild(groupList);
     iconList.appendChild(categoryDiv);
   });
+
+  // If no issues found, show a message
+  if (iconList.children.length === 0) {
+    iconList.innerHTML = `
+      <div class="no-issues-message">
+        <span class="no-issues-icon">✨</span>
+        <p>No issues detected by automated testing.</p>
+        <p class="no-issues-hint">Remember: Automated tools can only find about 30-40% of accessibility issues. 
+        <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener">Manual testing</a> is essential.</p>
+      </div>
+    `;
+  }
 }
 
 // Helper function to group RuleResult[] into RuleResultGroup[]

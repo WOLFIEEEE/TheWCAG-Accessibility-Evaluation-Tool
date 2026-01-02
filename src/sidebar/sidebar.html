@@ -78,64 +78,101 @@
       <div id="tab-panels">
         <!-- Details Panel -->
         <div id="panel-details" class="panel active" role="tabpanel" aria-labelledby="tab-details">
-          <!-- Summary -->
-          <div id="summary">
+          <!-- Summary Section -->
+          <section id="summary" aria-labelledby="summary-heading">
+            <div class="section-header">
+              <h3 id="summary-heading">📊 Evaluation Summary</h3>
+              <p class="section-description">Overview of accessibility issues found on this page</p>
+            </div>
+            
             <ul id="summary-counts">
-              <li id="count-errors" class="count-item">
+              <li id="count-errors" class="count-item count-critical" title="Critical issues that MUST be fixed. These create barriers for users with disabilities.">
                 <span class="count-icon error-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">Errors</span>
+                <span class="count-hint">Must Fix</span>
               </li>
-              <li id="count-contrast" class="count-item">
+              <li id="count-contrast" class="count-item count-critical" title="Color contrast issues making text hard to read for users with low vision.">
                 <span class="count-icon contrast-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">Contrast</span>
+                <span class="count-hint">Visibility</span>
               </li>
-              <li id="count-alerts" class="count-item">
+              <li id="count-alerts" class="count-item count-warning" title="Potential issues that need manual review. May or may not be problems.">
                 <span class="count-icon alert-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">Alerts</span>
+                <span class="count-hint">Review</span>
               </li>
-              <li id="count-features" class="count-item">
+              <li id="count-features" class="count-item count-good" title="Accessibility features correctly implemented. Good job!">
                 <span class="count-icon feature-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">Features</span>
+                <span class="count-hint">Good</span>
               </li>
-              <li id="count-structure" class="count-item">
+              <li id="count-structure" class="count-item count-info" title="Page structure elements like headings, landmarks, lists, and tables.">
                 <span class="count-icon structure-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">Structure</span>
+                <span class="count-hint">Elements</span>
               </li>
-              <li id="count-aria" class="count-item">
+              <li id="count-aria" class="count-item count-info" title="ARIA attributes providing additional accessibility information.">
                 <span class="count-icon aria-icon"></span>
                 <span class="count-value">0</span>
                 <span class="count-label">ARIA</span>
+                <span class="count-hint">Attributes</span>
               </li>
             </ul>
             
+            <!-- Legend -->
+            <div class="summary-legend">
+              <span class="legend-item legend-critical">🔴 Critical - Must fix</span>
+              <span class="legend-item legend-warning">🟡 Warning - Review needed</span>
+              <span class="legend-item legend-good">🟢 Good - Properly implemented</span>
+              <span class="legend-item legend-info">🔵 Info - Structural elements</span>
+            </div>
+            
             <p id="congrats" class="hidden">
-              🎉 No errors detected! 
+              🎉 No critical errors detected! 
               <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener">Manual testing</a> 
-              is still recommended.
+              is still recommended for full compliance.
             </p>
             
             <!-- AIM Score -->
-            <div id="aim-score">
-              <span id="aim-label">
-                <a href="#" title="Accessibility Impact Metric">AIM Score</a>
-              </span>
-              <span id="aim-value">0.0</span>
-              <span>out of 10</span>
+            <div id="aim-score" title="Accessibility Impact Metric - Higher is better. Based on issue severity and count.">
+              <div class="aim-header">
+                <span id="aim-label">🎯 Accessibility Score</span>
+                <span class="aim-tooltip">?</span>
+              </div>
+              <div class="aim-display">
+                <span id="aim-value">0.0</span>
+                <span class="aim-max">/10</span>
+              </div>
               <div id="aim-bar-container">
                 <div id="aim-bar"></div>
               </div>
+              <p class="aim-description">
+                Higher scores mean fewer and less severe issues.
+                <br>
+                <span class="aim-scale">0-3: Poor | 4-6: Fair | 7-8: Good | 9-10: Excellent</span>
+              </p>
             </div>
-          </div>
+          </section>
           
-          <!-- Icon List -->
-          <div id="icon-list">
-            <p id="loading-message">Evaluating page accessibility...</p>
-          </div>
+          <!-- Issues Section -->
+          <section id="issues-section" aria-labelledby="issues-heading">
+            <div class="section-header">
+              <h3 id="issues-heading">🔍 Detected Issues</h3>
+              <p class="section-description">Click any item to see details and suggested fixes</p>
+            </div>
+            
+            <div id="icon-list">
+              <p id="loading-message">
+                <span class="loading-spinner"></span>
+                Evaluating page accessibility...
+              </p>
+            </div>
+          </section>
         </div>
 
         <!-- Reference Panel -->
