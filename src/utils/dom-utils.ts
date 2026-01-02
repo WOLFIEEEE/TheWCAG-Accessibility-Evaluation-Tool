@@ -10,36 +10,74 @@ import { ElementInfo, BoundingRect } from '../types';
 // ============================================
 
 /**
+ * Check if a class is a utility class (Tailwind, Bootstrap, etc.)
+ * These are unstable and should be avoided in selectors
+ */
+function isUtilityClass(className: string): boolean {
+  // Tailwind-style utility classes with modifiers
+  if (/^(sm|md|lg|xl|2xl|hover|focus|active|disabled|dark|light):/.test(className)) {
+    return true;
+  }
+  // Common utility patterns
+  if (/^(w-|h-|p-|m-|px-|py-|mx-|my-|pt-|pb-|pl-|pr-|mt-|mb-|ml-|mr-|text-|bg-|border-|rounded-|flex-|grid-|col-|row-|gap-|space-|font-|leading-|tracking-|z-|opacity-|shadow-|transition-|transform-|animate-|duration-|ease-|delay-|scale-|rotate-|translate-|skew-|origin-|overflow-|whitespace-|break-|align-|justify-|items-|content-|self-|place-|order-|grow-|shrink-|basis-|min-|max-|inset-|top-|right-|bottom-|left-|visible|invisible|hidden|block|inline|flex|grid|table|absolute|relative|fixed|sticky)/.test(className)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Get stable classes from an element (non-utility classes)
+ */
+function getStableClasses(element: Element, maxClasses = 2): string[] {
+  if (!element.className || typeof element.className !== 'string') {
+    return [];
+  }
+  
+  const allClasses = element.className.trim().split(/\s+/).filter(c => c);
+  const stableClasses = allClasses.filter(c => !isUtilityClass(c));
+  
+  // If no stable classes, take first non-modifier class
+  if (stableClasses.length === 0) {
+    const fallback = allClasses.find(c => !c.includes(':'));
+    return fallback ? [fallback] : [];
+  }
+  
+  return stableClasses.slice(0, maxClasses);
+}
+
+/**
  * Generate a CSS selector for an element
+ * Creates robust selectors that work even with dynamic classes
  */
 export function getSelector(element: Element): string {
+  // Prefer ID selectors - most reliable
   if (element.id) {
     return `#${CSS.escape(element.id)}`;
   }
 
+  // Build a path from element to a stable ancestor (one with ID)
   const parts: string[] = [];
   let current: Element | null = element;
+  let depth = 0;
+  const maxDepth = 5; // Limit depth to keep selectors manageable
 
-  while (current && current !== document.body) {
+  while (current && current !== document.body && depth < maxDepth) {
     let selector = current.tagName.toLowerCase();
 
+    // If we find an ID, use it and stop
     if (current.id) {
       selector = `#${CSS.escape(current.id)}`;
       parts.unshift(selector);
       break;
     }
 
-    if (current.className && typeof current.className === 'string') {
-      const classes = current.className
-        .trim()
-        .split(/\s+/)
-        .filter(c => c);
-      if (classes.length > 0) {
-        selector += `.${classes.map(c => CSS.escape(c)).join('.')}`;
-      }
+    // Add stable (non-utility) classes
+    const stableClasses = getStableClasses(current);
+    if (stableClasses.length > 0) {
+      selector += `.${stableClasses.map(c => CSS.escape(c)).join('.')}`;
     }
 
-    // Add nth-child if needed for uniqueness
+    // Add nth-of-type for uniqueness
     const parent = current.parentElement;
     if (parent) {
       const siblings = Array.from(parent.children);
@@ -52,6 +90,54 @@ export function getSelector(element: Element): string {
 
     parts.unshift(selector);
     current = current.parentElement;
+    depth++;
+  }
+
+  const fullSelector = parts.join(' > ');
+  
+  // Validate the selector works
+  try {
+    const found = document.querySelector(fullSelector);
+    if (found === element) {
+      return fullSelector;
+    }
+  } catch {
+    // Selector is invalid, fall back
+  }
+  
+  // Fallback: simple tag + nth-of-type from body
+  return getSimpleSelector(element);
+}
+
+/**
+ * Generate a simple fallback selector using only tags and nth-of-type
+ */
+function getSimpleSelector(element: Element): string {
+  const parts: string[] = [];
+  let current: Element | null = element;
+  let depth = 0;
+  const maxDepth = 6;
+
+  while (current && current !== document.body && depth < maxDepth) {
+    let selector = current.tagName.toLowerCase();
+
+    if (current.id) {
+      return `#${CSS.escape(current.id)}`;
+    }
+
+    const parent = current.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children);
+      const sameTagSiblings = siblings.filter(s => s.tagName === current!.tagName);
+      if (sameTagSiblings.length > 1) {
+        const index = sameTagSiblings.indexOf(current) + 1;
+        selector += `:nth-of-type(${index})`;
+      }
+    }
+
+    parts.unshift(selector);
+    current = current.parentElement;
+    depth++;
   }
 
   return parts.join(' > ');

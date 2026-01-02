@@ -6,6 +6,9 @@ import { EvaluationResults, RuleResult } from '../types';
 import { evaluatePage } from '../rules';
 import { dispatchCustomEvent, listenForCustomEvent } from '../utils/messaging';
 import { getNavigationOrder, getHeadings, getLandmarks } from '../utils/dom-utils';
+// Static imports instead of dynamic - dynamic imports don't work in injected scripts
+import { generateComplianceReport } from '../utils/compliance-checker';
+import { generateFullPreview } from '../utils/screen-reader-simulator';
 
 // State
 let extensionUrl = '';
@@ -235,8 +238,23 @@ const createIcon = (
   index: number,
   container: HTMLElement
 ): void => {
-  const element = document.querySelector(item.selector);
-  if (!element) return;
+  let element: Element | null = null;
+  
+  // Try to find element, handle invalid selectors gracefully
+  try {
+    element = document.querySelector(item.selector);
+  } catch (e) {
+    // Selector is invalid (e.g., has unescaped special chars)
+    console.warn(`[TheWCAG] Invalid selector: ${item.selector.substring(0, 100)}...`);
+  }
+  
+  if (!element) {
+    // Only log for first few failures to avoid spam
+    if (index < 3) {
+      console.debug(`[TheWCAG] Element not found for: ${item.ruleId}`);
+    }
+    return;
+  }
 
   const rect = element.getBoundingClientRect();
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -410,8 +428,16 @@ const setupMessageListeners = (): void => {
 
   const cleanup4 = listenForCustomEvent<{ selector: string }>('highlightElement', data => {
     if (isCleanedUp) return;
-    const element = document.querySelector(data.selector);
-    if (element) highlightElement(element as HTMLElement);
+    try {
+      const element = document.querySelector(data.selector);
+      if (element) {
+        highlightElement(element as HTMLElement);
+      } else {
+        console.warn('[TheWCAG] Element not found for highlight:', data.selector.substring(0, 80));
+      }
+    } catch (e) {
+      console.warn('[TheWCAG] Invalid selector for highlight:', data.selector.substring(0, 80));
+    }
   });
   cleanupFunctions.push(cleanup4);
 
@@ -533,14 +559,13 @@ const setupMessageListeners = (): void => {
   const cleanup8 = listenForCustomEvent<{ level: string }>('getComplianceReport', data => {
     if (isCleanedUp || !results) return;
     
-    // Import compliance checker dynamically
-    import('../utils/compliance-checker').then(({ generateComplianceReport }) => {
+    try {
       const level = (data.level || 'AA') as 'A' | 'AA' | 'AAA';
       const report = generateComplianceReport(results!, level);
       dispatchCustomEvent('complianceData', report);
-    }).catch(err => {
+    } catch (err) {
       console.error('TheWCAG: Failed to generate compliance report:', err);
-    });
+    }
   });
   cleanupFunctions.push(cleanup8);
 
@@ -548,13 +573,12 @@ const setupMessageListeners = (): void => {
   const cleanup9 = listenForCustomEvent('getScreenReaderPreview', () => {
     if (isCleanedUp) return;
     
-    // Import screen reader simulator dynamically
-    import('../utils/screen-reader-simulator').then(({ generateFullPreview }) => {
+    try {
       const outputs = generateFullPreview();
       dispatchCustomEvent('screenReaderData', outputs);
-    }).catch(err => {
+    } catch (err) {
       console.error('TheWCAG: Failed to generate screen reader preview:', err);
-    });
+    }
   });
   cleanupFunctions.push(cleanup9);
 };
