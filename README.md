@@ -125,7 +125,7 @@ Export accessibility reports in multiple formats:
 
 ### Option 1: Download Release (Recommended)
 
-1. Download `TheWCAG-Extension.zip` from [Releases](https://github.com/WOLFIEEEE/TheWCAG-Accessibility-Evaluation-Tool/releases)
+1. Download `TheWCAG-Accessibility-Evaluation-Tool.zip` from [Releases](https://github.com/WOLFIEEEE/TheWCAG-Accessibility-Evaluation-Tool/releases)
 2. Extract the ZIP file
 3. Open Chrome → `chrome://extensions/`
 4. Enable **Developer mode** (toggle in top right)
