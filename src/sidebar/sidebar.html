@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheWCAG Evaluation Extension</title>
+  <link rel="stylesheet" href="../styles/sidebar.css">
+</head>
+<body>
+  <div id="sidebar-container" role="region" aria-label="TheWCAG Sidebar">
+    <!-- Header -->
+    <header id="sidebar-header">
+      <div id="logo">
+        <img src="../assets/icons/logo.svg" alt="TheWCAG Evaluation Extension">
+        <span>TheWCAG</span>
+      </div>
+      <div id="powered-by">
+        <span>Web Accessibility</span>
+        <span>Evaluation Tool</span>
+      </div>
+    </header>
+
+    <!-- Error State -->
+    <div id="sidebar-error" class="hidden">
+      <h2>Error</h2>
+      <div id="error-message">Unable to evaluate this page.</div>
+    </div>
+
+    <!-- Styles Toggle -->
+    <div id="styles-toggle">
+      <label class="switch">
+        <input type="checkbox" id="styles-switch" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Styles:</span>
+      <span class="toggle-off">OFF</span>
+      <span class="toggle-on">ON</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="sidebar-content">
+      <h2 class="visually-hidden">Evaluation Results</h2>
+      
+      <!-- Tab Navigation -->
+      <div id="tabs" role="tablist" aria-label="Result sections">
+        <button id="tab-details" class="tab active" role="tab" aria-selected="true" aria-controls="panel-details">
+          Details
+        </button>
+        <button id="tab-reference" class="tab" role="tab" aria-selected="false" aria-controls="panel-reference">
+          Reference
+        </button>
+        <button id="tab-order" class="tab" role="tab" aria-selected="false" aria-controls="panel-order">
+          Order
+        </button>
+        <button id="tab-structure" class="tab" role="tab" aria-selected="false" aria-controls="panel-structure">
+          Structure
+        </button>
+        <button id="tab-contrast" class="tab" role="tab" aria-selected="false" aria-controls="panel-contrast">
+          Contrast
+        </button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div id="tab-panels">
+        <!-- Details Panel -->
+        <div id="panel-details" class="panel active" role="tabpanel" aria-labelledby="tab-details">
+          <!-- Summary -->
+          <div id="summary">
+            <ul id="summary-counts">
+              <li id="count-errors" class="count-item">
+                <span class="count-icon error-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">Errors</span>
+              </li>
+              <li id="count-contrast" class="count-item">
+                <span class="count-icon contrast-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">Contrast</span>
+              </li>
+              <li id="count-alerts" class="count-item">
+                <span class="count-icon alert-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">Alerts</span>
+              </li>
+              <li id="count-features" class="count-item">
+                <span class="count-icon feature-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">Features</span>
+              </li>
+              <li id="count-structure" class="count-item">
+                <span class="count-icon structure-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">Structure</span>
+              </li>
+              <li id="count-aria" class="count-item">
+                <span class="count-icon aria-icon"></span>
+                <span class="count-value">-</span>
+                <span class="count-label">ARIA</span>
+              </li>
+            </ul>
+            
+            <p id="congrats" class="hidden">
+              Congratulations! No errors were detected! 
+              <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener">Manual testing</a> 
+              is still necessary for full compliance.
+            </p>
+            
+            <!-- AIM Score -->
+            <div id="aim-score">
+              <span id="aim-label">
+                <a href="#" title="Accessibility Impact Metric Score">AIM Score</a>:
+              </span>
+              <span id="aim-value">-</span>
+              <span> out of 10</span>
+              <div id="aim-bar-container">
+                <div id="aim-bar"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Icon List -->
+          <div id="icon-list">
+            <p id="loading-message">Evaluating page accessibility...</p>
+          </div>
+        </div>
+
+        <!-- Reference Panel -->
+        <div id="panel-reference" class="panel" role="tabpanel" aria-labelledby="tab-reference" hidden>
+          <div id="reference-placeholder">
+            <p>Click an icon in the Details panel to view documentation.</p>
+            <a href="#" id="show-index">View the icon index</a>
+          </div>
+          <div id="reference-content" class="hidden">
+            <div id="ref-header">
+              <div id="ref-icon"></div>
+              <div id="ref-title-group">
+                <div id="ref-type"></div>
+                <div id="ref-title"></div>
+              </div>
+            </div>
+            <h3>What It Means</h3>
+            <div id="ref-summary"></div>
+            <h3>Why It Matters</h3>
+            <div id="ref-purpose"></div>
+            <h3>What To Do</h3>
+            <ul id="ref-actions"></ul>
+            <h3>The Algorithm</h3>
+            <div id="ref-algorithm"></div>
+            <h3>WCAG Guidelines</h3>
+            <ul id="ref-guidelines"></ul>
+          </div>
+          <div id="reference-index" class="hidden"></div>
+        </div>
+
+        <!-- Order Panel -->
+        <div id="panel-order" class="panel" role="tabpanel" aria-labelledby="tab-order" hidden>
+          <div id="order-content">
+            <p><a href="#" id="refresh-order">Refresh Navigation Order</a></p>
+            <p><a href="#" id="toggle-icons">Show/Hide Icons</a></p>
+            <p class="order-description">
+              Order, role, and accessible name for all navigable elements.
+            </p>
+            <ol id="nav-list"></ol>
+          </div>
+        </div>
+
+        <!-- Structure Panel -->
+        <div id="panel-structure" class="panel" role="tabpanel" aria-labelledby="tab-structure" hidden>
+          <div id="structure-content">
+            <div id="structure-empty" class="hidden">
+              <p>This page has no heading structure!</p>
+            </div>
+            <div id="heading-outline"></div>
+            <h3>Landmarks</h3>
+            <ul id="landmark-list"></ul>
+          </div>
+        </div>
+
+        <!-- Contrast Panel -->
+        <div id="panel-contrast" class="panel" role="tabpanel" aria-labelledby="tab-contrast" hidden>
+          <div id="contrast-content">
+            <p id="contrast-message">
+              Click a Contrast icon or enter colors manually to check contrast.
+            </p>
+            
+            <!-- Foreground -->
+            <fieldset id="fg-fieldset">
+              <legend>Foreground</legend>
+              <div class="color-inputs">
+                <label>
+                  <span>Hex</span>
+                  <div class="hex-input">
+                    <span>#</span>
+                    <input type="text" id="fg-hex" maxlength="6" placeholder="000000">
+                  </div>
+                </label>
+                <label>
+                  <span>Picker</span>
+                  <input type="color" id="fg-picker" value="#000000">
+                </label>
+                <label>
+                  <span>Alpha</span>
+                  <input type="number" id="fg-alpha" min="0" max="1" step="0.01" value="1">
+                </label>
+              </div>
+              <label class="lightness-label">
+                <span>Lightness</span>
+                <input type="range" id="fg-lightness" min="0" max="100" value="0">
+              </label>
+            </fieldset>
+            
+            <!-- Background -->
+            <fieldset id="bg-fieldset">
+              <legend>Background</legend>
+              <div class="color-inputs">
+                <label>
+                  <span>Hex</span>
+                  <div class="hex-input">
+                    <span>#</span>
+                    <input type="text" id="bg-hex" maxlength="6" placeholder="FFFFFF">
+                  </div>
+                </label>
+                <label>
+                  <span>Picker</span>
+                  <input type="color" id="bg-picker" value="#FFFFFF">
+                </label>
+              </div>
+              <label class="lightness-label">
+                <span>Lightness</span>
+                <input type="range" id="bg-lightness" min="0" max="100" value="100">
+              </label>
+            </fieldset>
+            
+            <!-- Results -->
+            <div id="contrast-results">
+              <p>
+                <strong>Contrast Ratio:</strong> 
+                <span id="contrast-ratio">-</span>
+              </p>
+              <p>
+                <strong>Text Size:</strong> 
+                <span id="text-size">Normal</span>
+              </p>
+              <p id="contrast-sample">
+                <span id="sample-text">Sample Text</span>
+              </p>
+              <p>
+                WCAG AA: <span id="wcag-aa" class="pass">-</span><br>
+                WCAG AAA: <span id="wcag-aaa" class="pass">-</span>
+              </p>
+            </div>
+            
+            <!-- Contrast Errors List -->
+            <div id="contrast-list"></div>
+            
+            <p>
+              <a href="#" id="desaturate-page">Desaturate page</a>
+            </p>
+            
+            <p class="contrast-note">
+              <em>Note: Contrast checking may not detect issues with gradients, 
+              filters, or background transparency.</em>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="sidebar.js"></script>
+</body>
+</html>
+
