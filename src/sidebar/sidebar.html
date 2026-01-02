@@ -12,11 +12,11 @@
     <!-- Header -->
     <header id="sidebar-header">
       <div id="logo">
-        <img src="../assets/icons/logo.svg" alt="TheWCAG Evaluation Extension">
+        <img src="../assets/icons/logo.svg" alt="TheWCAG">
         <span>TheWCAG</span>
       </div>
       <div id="powered-by">
-        <span>Web Accessibility</span>
+        <span>Accessibility</span>
         <span>Evaluation Tool</span>
       </div>
     </header>
@@ -33,7 +33,7 @@
         <input type="checkbox" id="styles-switch" checked>
         <span class="slider"></span>
       </label>
-      <span class="toggle-label">Styles:</span>
+      <span class="toggle-label">Page Styles</span>
       <span class="toggle-off">OFF</span>
       <span class="toggle-on">ON</span>
     </div>
@@ -42,27 +42,27 @@
     <div id="sidebar-content">
       <h2 class="visually-hidden">Evaluation Results</h2>
       
-      <!-- Tab Navigation -->
+      <!-- Tab Navigation - Compact Labels -->
       <div id="tabs" role="tablist" aria-label="Result sections">
-        <button id="tab-details" class="tab active" role="tab" aria-selected="true" aria-controls="panel-details">
-          Details
+        <button id="tab-details" class="tab active" role="tab" aria-selected="true" aria-controls="panel-details" title="Details">
+          📋
         </button>
-        <button id="tab-reference" class="tab" role="tab" aria-selected="false" aria-controls="panel-reference">
-          Reference
+        <button id="tab-reference" class="tab" role="tab" aria-selected="false" aria-controls="panel-reference" title="Reference">
+          📖
         </button>
-        <button id="tab-order" class="tab" role="tab" aria-selected="false" aria-controls="panel-order">
-          Order
+        <button id="tab-order" class="tab" role="tab" aria-selected="false" aria-controls="panel-order" title="Tab Order">
+          🔢
         </button>
-        <button id="tab-structure" class="tab" role="tab" aria-selected="false" aria-controls="panel-structure">
-          Structure
+        <button id="tab-structure" class="tab" role="tab" aria-selected="false" aria-controls="panel-structure" title="Structure">
+          🏗️
         </button>
-        <button id="tab-contrast" class="tab" role="tab" aria-selected="false" aria-controls="panel-contrast">
-          Contrast
+        <button id="tab-contrast" class="tab" role="tab" aria-selected="false" aria-controls="panel-contrast" title="Contrast">
+          🎨
         </button>
-        <button id="tab-compliance" class="tab" role="tab" aria-selected="false" aria-controls="panel-compliance">
-          WCAG 2.2
+        <button id="tab-compliance" class="tab" role="tab" aria-selected="false" aria-controls="panel-compliance" title="WCAG 2.2 Compliance">
+          ✓
         </button>
-        <button id="tab-settings" class="tab" role="tab" aria-selected="false" aria-controls="panel-settings">
+        <button id="tab-settings" class="tab" role="tab" aria-selected="false" aria-controls="panel-settings" title="Settings">
           ⚙️
         </button>
       </div>
@@ -76,49 +76,49 @@
             <ul id="summary-counts">
               <li id="count-errors" class="count-item">
                 <span class="count-icon error-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">Errors</span>
               </li>
               <li id="count-contrast" class="count-item">
                 <span class="count-icon contrast-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">Contrast</span>
               </li>
               <li id="count-alerts" class="count-item">
                 <span class="count-icon alert-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">Alerts</span>
               </li>
               <li id="count-features" class="count-item">
                 <span class="count-icon feature-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">Features</span>
               </li>
               <li id="count-structure" class="count-item">
                 <span class="count-icon structure-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">Structure</span>
               </li>
               <li id="count-aria" class="count-item">
                 <span class="count-icon aria-icon"></span>
-                <span class="count-value">-</span>
+                <span class="count-value">0</span>
                 <span class="count-label">ARIA</span>
               </li>
             </ul>
             
             <p id="congrats" class="hidden">
-              Congratulations! No errors were detected! 
+              🎉 No errors detected! 
               <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener">Manual testing</a> 
-              is still necessary for full compliance.
+              is still recommended.
             </p>
             
             <!-- AIM Score -->
             <div id="aim-score">
               <span id="aim-label">
-                <a href="#" title="Accessibility Impact Metric Score">AIM Score</a>:
+                <a href="#" title="Accessibility Impact Metric">AIM Score</a>
               </span>
-              <span id="aim-value">-</span>
-              <span> out of 10</span>
+              <span id="aim-value">0.0</span>
+              <span>out of 10</span>
               <div id="aim-bar-container">
                 <div id="aim-bar"></div>
               </div>
@@ -191,10 +191,12 @@
         <!-- Order Panel -->
         <div id="panel-order" class="panel" role="tabpanel" aria-labelledby="tab-order" hidden>
           <div id="order-content">
-            <p><a href="#" id="refresh-order">Refresh Navigation Order</a></p>
-            <p><a href="#" id="toggle-icons">Show/Hide Icons</a></p>
+            <p>
+              <a href="#" id="refresh-order">↻ Refresh</a>
+              <a href="#" id="toggle-icons">👁 Toggle Icons</a>
+            </p>
             <p class="order-description">
-              Order, role, and accessible name for all navigable elements.
+              Tab navigation order with roles and accessible names.
             </p>
             <ol id="nav-list"></ol>
           </div>
@@ -204,7 +206,7 @@
         <div id="panel-structure" class="panel" role="tabpanel" aria-labelledby="tab-structure" hidden>
           <div id="structure-content">
             <div id="structure-empty" class="hidden">
-              <p>This page has no heading structure!</p>
+              <p>⚠️ This page has no heading structure!</p>
             </div>
             <div id="heading-outline"></div>
             <h3>Landmarks</h3>
@@ -216,14 +218,14 @@
                 <h3>🔊 Screen Reader Preview</h3>
                 <select id="sr-mode">
                   <option value="all">All Content</option>
-                  <option value="headings">Headings (H key)</option>
-                  <option value="landmarks">Landmarks (D key)</option>
-                  <option value="links">Links (K key)</option>
-                  <option value="buttons">Buttons (B key)</option>
-                  <option value="forms">Form Controls (F key)</option>
-                  <option value="tables">Tables (T key)</option>
-                  <option value="images">Images (G key)</option>
-                  <option value="issues">Issues Only (E key)</option>
+                  <option value="headings">Headings</option>
+                  <option value="landmarks">Landmarks</option>
+                  <option value="links">Links</option>
+                  <option value="buttons">Buttons</option>
+                  <option value="forms">Forms</option>
+                  <option value="tables">Tables</option>
+                  <option value="images">Images</option>
+                  <option value="issues">Issues</option>
                 </select>
               </div>
               
@@ -232,8 +234,8 @@
               </div>
               
               <div class="sr-footer">
-                <button id="sr-export">Export as Text</button>
-                <span class="sr-hint">Click items to highlight on page</span>
+                <button id="sr-export">Export</button>
+                <span class="sr-hint">Click to highlight on page</span>
               </div>
               
               <div class="sr-nav-keys">
@@ -250,7 +252,7 @@
         <div id="panel-contrast" class="panel" role="tabpanel" aria-labelledby="tab-contrast" hidden>
           <div id="contrast-content">
             <p id="contrast-message">
-              Click a Contrast icon or enter colors manually to check contrast.
+              Click a Contrast icon or enter colors to check contrast.
             </p>
             
             <!-- Foreground -->
@@ -305,7 +307,7 @@
             <div id="contrast-results">
               <p>
                 <strong>Contrast Ratio:</strong> 
-                <span id="contrast-ratio">-</span>
+                <span id="contrast-ratio">21.00:1</span>
               </p>
               <p>
                 <strong>Text Size:</strong> 
@@ -315,21 +317,20 @@
                 <span id="sample-text">Sample Text</span>
               </p>
               <p>
-                WCAG AA: <span id="wcag-aa" class="pass">-</span><br>
-                WCAG AAA: <span id="wcag-aaa" class="pass">-</span>
+                WCAG AA: <span id="wcag-aa" class="pass">Pass</span> · 
+                WCAG AAA: <span id="wcag-aaa" class="pass">Pass</span>
               </p>
             </div>
             
             <!-- Contrast Errors List -->
             <div id="contrast-list"></div>
             
-            <p>
+            <p style="text-align: center;">
               <a href="#" id="desaturate-page">Desaturate page</a>
             </p>
             
             <p class="contrast-note">
-              <em>Note: Contrast checking may not detect issues with gradients, 
-              filters, or background transparency.</em>
+              Note: May not detect issues with gradients, filters, or transparency.
             </p>
           </div>
         </div>
@@ -339,11 +340,11 @@
           <div id="compliance-content">
             <div class="compliance-header">
               <div class="compliance-level-select">
-                <label for="wcag-level">WCAG 2.2 Level:</label>
+                <label for="wcag-level">WCAG 2.2 Level</label>
                 <select id="wcag-level">
-                  <option value="A">Level A (32 criteria)</option>
-                  <option value="AA" selected>Level AA (56 criteria)</option>
-                  <option value="AAA">Level AAA (87 criteria)</option>
+                  <option value="A">Level A (32)</option>
+                  <option value="AA" selected>Level AA (56)</option>
+                  <option value="AAA">Level AAA (87)</option>
                 </select>
               </div>
               <div class="compliance-score">
@@ -357,7 +358,7 @@
               <button class="filter-btn" data-filter="passed">✓ Passed</button>
               <button class="filter-btn" data-filter="failed">✗ Failed</button>
               <button class="filter-btn" data-filter="manual">? Manual</button>
-              <button class="filter-btn" data-filter="new22">🆕 New in 2.2</button>
+              <button class="filter-btn" data-filter="new22">🆕 2.2</button>
             </div>
             
             <div id="compliance-list" class="compliance-list">
@@ -365,7 +366,7 @@
             </div>
             
             <div class="compliance-export">
-              <button id="export-compliance">Export Compliance Report</button>
+              <button id="export-compliance">Export Report</button>
             </div>
           </div>
         </div>
@@ -403,9 +404,6 @@
             <!-- Ignore Patterns -->
             <div class="settings-section">
               <h3>🚫 Ignore Patterns</h3>
-              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                Exclude specific elements, selectors, rules, or domains from evaluation.
-              </p>
               <div id="ignore-list" class="ignore-list">
                 <p class="empty-message">No ignore patterns defined.</p>
               </div>
@@ -414,7 +412,7 @@
                   <option value="selector">CSS Selector</option>
                   <option value="rule">Rule ID</option>
                   <option value="domain">Domain</option>
-                  <option value="element">Element Type</option>
+                  <option value="element">Element</option>
                 </select>
                 <input type="text" id="ignore-pattern-value" placeholder="Enter pattern...">
                 <input type="text" id="ignore-pattern-reason" placeholder="Reason (optional)">
@@ -425,9 +423,6 @@
             <!-- Custom Rules -->
             <div class="settings-section">
               <h3>📏 Custom Rules</h3>
-              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                Create custom accessibility checks for your specific needs.
-              </p>
               <div id="custom-rules-list">
                 <p class="empty-message">No custom rules defined.</p>
               </div>
@@ -438,8 +433,8 @@
             <div class="settings-section">
               <h3>💾 Backup & Restore</h3>
               <div class="import-export-btns">
-                <button id="export-settings">Export Settings</button>
-                <button id="import-settings">Import Settings</button>
+                <button id="export-settings">Export</button>
+                <button id="import-settings">Import</button>
               </div>
             </div>
           </div>
@@ -454,4 +449,3 @@
   <script src="sidebar.js"></script>
 </body>
 </html>
-
